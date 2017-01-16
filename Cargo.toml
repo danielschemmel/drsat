@@ -1,0 +1,13 @@
+[package]
+name = "dsat"
+version = "0.1.0"
+authors = ["Daniel Schemmel <daniel.schemmel@comsys.rwth-aachen.de>"]
+build = "build.rs"
+
+[build-dependencies]
+git2 = { version = "0.6" }
+
+[dependencies]
+clap  = { version = "2" }
+lazy_static = { version = "0.2" }
+regex = { version = "0.2" }
