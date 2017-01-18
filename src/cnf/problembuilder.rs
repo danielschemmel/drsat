@@ -27,7 +27,6 @@ impl ProblemBuilder {
 
 	fn variable_id(&mut self, name: &str) -> usize {
 		let names = &mut self.names;
-		let clauses = &self.clauses;
 		*self.names2index.entry(name.to_string()).or_insert_with(|| { names.push(name.to_string()); names.len() - 1 })
 	}
 }
