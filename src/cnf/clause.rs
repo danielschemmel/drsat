@@ -1,4 +1,4 @@
-use ::std::slice::Iter;
+use ::std::fmt;
 use ::std::vec::Vec;
 use super::Literal;
 
@@ -13,7 +13,11 @@ impl Clause {
 		Clause{ literals: literals, glue: glue }
 	}
 
-	pub fn iter(&self) -> Iter<Literal> {
-		self.literals.iter()
+	pub fn print(&self, f: &mut fmt::Formatter, names: &[String]) -> fmt::Result {
+		for (i, literal) in self.literals.iter().enumerate() {
+			if i != 0 { write!(f, " ")?; }
+			literal.print(f, &names[literal.id()])?;
+		}
+		Ok(())
 	}
 }

@@ -23,10 +23,7 @@ impl fmt::Display for Problem {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		writeln!(f, "Problem of {} clauses:", self.clauses.len())?;
 		for clause in self.clauses.iter() {
-			for (i, literal) in clause.iter().enumerate() {
-				if i != 0 { write!(f, " ")?; }
-				literal.print(f, &self.names[literal.id()])?;
-			}
+			clause.print(f, &self.names)?;
 			writeln!(f, "")?;
 		}
 		Ok(())
