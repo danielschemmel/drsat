@@ -3,7 +3,7 @@ use ::std::option::Option;
 use ::std::str;
 use ::regex::bytes::Regex;
 
-use gp::ast;
+use cnf::{Problem, ProblemBuilder};
 
 fn skip_comments(bytes: &[u8]) -> &[u8] {
 	lazy_static! {
@@ -38,29 +38,29 @@ fn parse_header(bytes: &[u8]) -> Option<(&[u8], usize, usize)> {
 	} else { Option::None }
 }
 
-fn parse_variable(bytes: &[u8]) -> Option<(&[u8], usize, bool)> {
+fn parse_variable(bytes: &[u8]) -> Option<(&[u8], &str, bool)> {
 	lazy_static! {
 		static ref RE: Regex = Regex::new(r"^[ \t\r\n]*(?P<neg>-[ \t\r\n]*)?(?P<id>[0-9]+)").unwrap();
 	}
 	if let Option::Some(m) = RE.captures(bytes) {
 		assert!(m.len() == 2 || m.len() == 3);
 		assert_eq!(m.get(0).unwrap().start(), 0);
-		let id = str::from_utf8(m.name("id").unwrap().as_bytes()).unwrap().parse::<usize>().unwrap();
+		let id = str::from_utf8(m.name("id").unwrap().as_bytes()).unwrap();
 		Option::Some((&bytes[m.get(0).unwrap().end()..], id, m.name("neg").is_some()))
 	} else { Option::None }
 }
 
-fn parse_clause(mut bytes: &[u8]) -> Option<(&[u8], ast::Or)> {
-	let mut clause = ast::Or::new();
+fn parse_clause<'a>(mut bytes: &'a[u8], problembuilder: &mut ProblemBuilder) -> Option<&'a[u8]> {
+	let mut clause = problembuilder.new_clause();
 	loop {
 		if let Option::Some((remaining, id, negated)) = parse_variable(bytes) {
 			bytes = remaining;
-			if id == 0 { break; }
-			clause.variables.push(ast::Variable::new(id, negated));
+			if id == "0" { break; }
+			clause.add_literal(id, negated);
 		} else { return Option::None }
 	}
-	if clause.variables.len() != 0 {
-		Option::Some((bytes, clause))
+	if clause.len() != 0 {
+		Option::Some(bytes)
 	} else { Option::None }
 }
 
@@ -73,22 +73,21 @@ fn skip_end(bytes: &[u8]) -> &[u8] {
 	&bytes[m.end()..]
 }
 
-pub fn parse(mut bytes: &[u8]) -> Option<ast::Node> {
+pub fn parse(mut bytes: &[u8]) -> Option<Problem> {
 	bytes = skip_comments(bytes);
 	if let Option::Some((remainder, _, clauses)) = parse_header(bytes) {
 		bytes = remainder;
-		let mut query = ast::And::new();
+		let mut query = ProblemBuilder::new();
 		for _ in 0..clauses {
-			if let Option::Some((remaining, or)) = parse_clause(bytes) {
+			if let Option::Some(remaining) = parse_clause(bytes, &mut query) {
 				bytes = remaining;
-				query.nodes.push(ast::Node::Or(or));
 			} else {
 				return Option::None;
 			}
 		}
 		bytes = skip_end(bytes);
 		if bytes.len() == 0 {
-			Option::Some(ast::Node::And(query))
+			Option::Some(query.as_problem())
 		} else { Option::None }
 	} else { Option::None }
 }

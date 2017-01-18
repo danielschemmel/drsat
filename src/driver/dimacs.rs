@@ -8,7 +8,7 @@ pub fn run(path: &str) {
 			assert_eq!(buf.len(), count);
 			println!("{} bytes", count);
 			if let Some(ast) = ::parser::dimacs::parse(&buf) {
-				println!("{:?}", ast);
+				println!("{}", ast);
 			} else { println!("Cannot parse {}", path); }
 		} else { println!("Cannot read {}", path); }
 	} else { println!("Cannot open {}", path); }
