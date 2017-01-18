@@ -15,17 +15,23 @@ impl ProblemBuilder {
 
 	pub fn new_clause(&mut self) -> ClauseBuilder {
 		self.clauses.push(Vec::new());
-		ClauseBuilder{ problembuilder: self, index: self.clauses.len() - 1 }
+    let clauses_len = self.clauses.len() - 1;
+    ClauseBuilder{ problembuilder: self, index: clauses_len }
 	}
 }
 
 pub struct ClauseBuilder<'a> {
-	problembuilder: &'a ProblemBuilder,
+	problembuilder: &'a mut ProblemBuilder,
 	index: usize,
 }
 
-impl ClauseBuilder<'a> {
+impl ProblemBuilder {
 	pub fn add_literal(&mut self, name: &str, negated: bool) {
-		let i = self.problembuilder.entry(name).or_insert_with(|| self.problembuilder.push(name); self.problembuilder.clauses.len() - 1);
+      let names = &mut self.names;
+      let clauses = &self.clauses;
+
+		  let i = self.names2index.entry(name.to_string()).or_insert_with(|| { names.push(name.to_string()); clauses.len() - 1 });
+
+      unimplemented!()
 	}
 }
