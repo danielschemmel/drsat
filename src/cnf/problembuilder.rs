@@ -12,13 +12,20 @@ pub struct ProblemBuilder {
 
 impl ProblemBuilder {
 	pub fn new() -> ProblemBuilder {
-		ProblemBuilder{ names2index: HashMap::new(), names: Vec::new(), clauses: Vec::new() }
+		ProblemBuilder {
+			names2index: HashMap::new(),
+			names: Vec::new(),
+			clauses: Vec::new(),
+		}
 	}
 
 	pub fn new_clause(&mut self) -> ClauseBuilder {
 		self.clauses.push(Vec::new());
 		let clauses_len = self.clauses.len() - 1;
-		ClauseBuilder{ problembuilder: self, index: clauses_len }
+		ClauseBuilder {
+			problembuilder: self,
+			index: clauses_len,
+		}
 	}
 
 	pub fn as_problem(self) -> Problem {
@@ -27,7 +34,10 @@ impl ProblemBuilder {
 
 	fn variable_id(&mut self, name: &str) -> usize {
 		let names = &mut self.names;
-		*self.names2index.entry(name.to_string()).or_insert_with(|| { names.push(name.to_string()); names.len() - 1 })
+		*self.names2index.entry(name.to_string()).or_insert_with(|| {
+			names.push(name.to_string());
+			names.len() - 1
+		})
 	}
 }
 
@@ -43,6 +53,6 @@ impl<'a> ClauseBuilder<'a> {
 	}
 
 	pub fn len(&self) -> usize {
-		return self.problembuilder.clauses[self.index].len()
+		return self.problembuilder.clauses[self.index].len();
 	}
 }

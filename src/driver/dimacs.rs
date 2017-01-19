@@ -9,7 +9,13 @@ pub fn run(path: &str) {
 			println!("{} bytes", count);
 			if let Some(ast) = ::parser::dimacs::parse(&buf) {
 				println!("{}", ast);
-			} else { println!("Cannot parse {}", path); }
-		} else { println!("Cannot read {}", path); }
-	} else { println!("Cannot open {}", path); }
+			} else {
+				println!("Cannot parse {}", path);
+			}
+		} else {
+			println!("Cannot read {}", path);
+		}
+	} else {
+		println!("Cannot open {}", path);
+	}
 }

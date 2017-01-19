@@ -10,6 +10,9 @@ pub struct And {
 
 impl And {
 	pub fn new() -> And {
-		And{ nodes: Vec::new(), variables: Vec::new() }
+		And {
+			nodes: Vec::new(),
+			variables: Vec::new(),
+		}
 	}
 }

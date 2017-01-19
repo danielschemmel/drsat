@@ -6,6 +6,9 @@ pub struct Variable {
 
 impl Variable {
 	pub fn new(id: usize, negated: bool) -> Variable {
-		Variable{ negated: negated, id: id }
+		Variable {
+			negated: negated,
+			id: id,
+		}
 	}
 }

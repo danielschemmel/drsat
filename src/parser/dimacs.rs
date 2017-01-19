@@ -35,7 +35,9 @@ fn parse_header(bytes: &[u8]) -> Option<(&[u8], usize, usize)> {
 		let variables = str::from_utf8(m.get(1).unwrap().as_bytes()).unwrap().parse::<usize>().unwrap();
 		let clauses = str::from_utf8(m.get(2).unwrap().as_bytes()).unwrap().parse::<usize>().unwrap();
 		Option::Some((&bytes[m.get(0).unwrap().end()..], variables, clauses))
-	} else { Option::None }
+	} else {
+		Option::None
+	}
 }
 
 fn parse_variable(bytes: &[u8]) -> Option<(&[u8], &str, bool)> {
@@ -47,21 +49,29 @@ fn parse_variable(bytes: &[u8]) -> Option<(&[u8], &str, bool)> {
 		assert_eq!(m.get(0).unwrap().start(), 0);
 		let id = str::from_utf8(m.name("id").unwrap().as_bytes()).unwrap();
 		Option::Some((&bytes[m.get(0).unwrap().end()..], id, m.name("neg").is_some()))
-	} else { Option::None }
+	} else {
+		Option::None
+	}
 }
 
-fn parse_clause<'a>(mut bytes: &'a[u8], problembuilder: &mut ProblemBuilder) -> Option<&'a[u8]> {
+fn parse_clause<'a>(mut bytes: &'a [u8], problembuilder: &mut ProblemBuilder) -> Option<&'a [u8]> {
 	let mut clause = problembuilder.new_clause();
 	loop {
 		if let Option::Some((remaining, id, negated)) = parse_variable(bytes) {
 			bytes = remaining;
-			if id == "0" { break; }
+			if id == "0" {
+				break;
+			}
 			clause.add_literal(id, negated);
-		} else { return Option::None }
+		} else {
+			return Option::None;
+		}
 	}
 	if clause.len() != 0 {
 		Option::Some(bytes)
-	} else { Option::None }
+	} else {
+		Option::None
+	}
 }
 
 fn skip_end(bytes: &[u8]) -> &[u8] {
@@ -88,6 +98,10 @@ pub fn parse(mut bytes: &[u8]) -> Option<Problem> {
 		bytes = skip_end(bytes);
 		if bytes.len() == 0 {
 			Option::Some(query.as_problem())
-		} else { Option::None }
-	} else { Option::None }
+		} else {
+			Option::None
+		}
+	} else {
+		Option::None
+	}
 }

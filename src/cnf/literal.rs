@@ -7,7 +7,7 @@ pub struct Literal {
 
 impl Literal {
 	pub fn new(id: usize, negated: bool) -> Literal {
-		Literal { data: (id << 1) | (negated as usize)}
+		Literal { data: (id << 1) | (negated as usize) }
 	}
 
 	pub fn id(&self) -> usize {

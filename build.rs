@@ -16,11 +16,15 @@ enum Error {
 }
 
 impl ::std::convert::From<::std::io::Error> for Error {
-	fn from(e: ::std::io::Error) -> Self { Error::Io(e) }
+	fn from(e: ::std::io::Error) -> Self {
+		Error::Io(e)
+	}
 }
 
 impl ::std::convert::From<::git2::Error> for Error {
-	fn from(e: ::git2::Error) -> Self { Error::Git(e) }
+	fn from(e: ::git2::Error) -> Self {
+		Error::Git(e)
+	}
 }
 
 fn same_content_as<P: AsRef<Path>>(path: P, content: &str) -> Result<bool, Error> {
@@ -32,9 +36,10 @@ fn same_content_as<P: AsRef<Path>>(path: P, content: &str) -> Result<bool, Error
 fn repository_description<P: AsRef<Path>>(dir: P) -> Result<String, Error> {
 	let repo = Repository::discover(dir)?;
 	let desc = repo.describe(&DescribeOptions::new().describe_tags().show_commit_oid_as_fallback(true))?;
-	let content = format!("static VERSION: &'static str = {:?};\n", desc.format(Some(
-		DescribeFormatOptions::new().dirty_suffix(".+").abbreviated_size(16)
-	))?);
+	let content = format!("static VERSION: &'static str = {:?};\n",
+	                      desc.format(Some(DescribeFormatOptions::new()
+			                      .dirty_suffix(".+")
+			                      .abbreviated_size(16)))?);
 	Ok(content)
 }
 

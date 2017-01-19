@@ -10,6 +10,9 @@ pub struct Or {
 
 impl Or {
 	pub fn new() -> Or {
-		Or{ nodes: Vec::new(), variables: Vec::new() }
+		Or {
+			nodes: Vec::new(),
+			variables: Vec::new(),
+		}
 	}
 }
