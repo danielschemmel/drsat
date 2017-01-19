@@ -33,8 +33,6 @@ fn main() {
 			println!("General Purpose AST stats:");
 			libdsat::gp::ast::util::print_stats();
 		}
-		_ => {
-			unreachable!();
-		}
+		_ => unreachable!()
 	}
 }
