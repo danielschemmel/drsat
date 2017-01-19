@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate clap;
-use clap::{App, Arg, SubCommand, AppSettings};
+use clap::{App, SubCommand, AppSettings};
 
 extern crate libdsat;
 
@@ -13,26 +13,13 @@ fn main() {
 		.setting(AppSettings::ColoredHelp)
 		.setting(AppSettings::GlobalVersion)
 		.setting(AppSettings::SubcommandRequiredElseHelp)
-		.subcommand(SubCommand::with_name("dimacs")
-			.about("Solve a query contained in a dimacs file, as used by the SAT competitions")
-			.arg(Arg::with_name("path")
-				.required(true)
-				.index(1)
-				.takes_value(true)
-				.value_name("PATH")
-				.help("The path to the dimacs file")))
-		.subcommand(SubCommand::with_name("stats").about("Print some internal statistics"))
+		.subcommand(libdsat::driver::dimacs::setup_command(SubCommand::with_name("dimacs")))
+		.subcommand(libdsat::driver::stats::setup_command(SubCommand::with_name("stats")))
 		.get_matches();
 
 	match matches.subcommand() {
-		("dimacs", Some(matches)) => {
-			let path = matches.value_of("path").unwrap();
-			libdsat::driver::dimacs::run(path);
-		}
-		("stats", Some(_)) => {
-			println!("General Purpose AST stats:");
-			libdsat::gp::ast::util::print_stats();
-		}
-		_ => unreachable!()
+		("dimacs", Some(matches)) => libdsat::driver::dimacs::main(matches),
+		("stats", Some(matches)) => libdsat::driver::stats::main(matches),
+		_ => unreachable!(),
 	}
 }
