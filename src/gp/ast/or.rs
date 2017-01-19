@@ -1,4 +1,3 @@
-use ::std::vec::Vec;
 use super::Node;
 use super::Variable;
 

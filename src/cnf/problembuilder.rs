@@ -1,5 +1,4 @@
 use ::std::collections::HashMap;
-use ::std::vec::Vec;
 use super::Literal;
 use super::Problem;
 

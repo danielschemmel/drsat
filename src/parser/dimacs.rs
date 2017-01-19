@@ -1,5 +1,3 @@
-//use ::std::vec::Vec;
-use ::std::option::Option;
 use ::std::str;
 use ::regex::bytes::Regex;
 

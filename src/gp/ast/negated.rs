@@ -1,4 +1,3 @@
-use ::std::boxed::Box;
 use super::Node;
 
 #[derive(Debug)]

@@ -1,5 +1,4 @@
 use ::std::fmt;
-use ::std::vec::Vec;
 use super::Literal;
 
 #[derive(Debug)]
