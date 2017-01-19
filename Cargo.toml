@@ -8,6 +8,6 @@ build = "build.rs"
 git2 = { version = "0.6" }
 
 [dependencies]
-clap  = { version = "2" }
+clap  = { version = "2.20" }
 lazy_static = { version = "0.2" }
 regex = { version = "0.2" }
