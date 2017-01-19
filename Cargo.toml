@@ -1,8 +1,12 @@
 [package]
 name = "dsat"
+description = "SAT solver"
 version = "0.1.0"
 authors = ["Daniel Schemmel <daniel.schemmel@comsys.rwth-aachen.de>"]
 build = "build.rs"
+
+[lib]
+name = "libdsat"
 
 [build-dependencies]
 git2 = { version = "0.6" }
