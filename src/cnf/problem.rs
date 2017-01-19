@@ -24,7 +24,7 @@ impl Problem {
 impl fmt::Display for Problem {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		writeln!(f, "Problem of {} clauses:", self.clauses.len())?;
-		for clause in self.clauses.iter() {
+		for clause in &self.clauses {
 			clause.print(f, &self.names)?;
 			writeln!(f, "")?;
 		}
