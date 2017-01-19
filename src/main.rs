@@ -15,8 +15,8 @@ fn main() {
 			.value_name("PATH")
 			.help("The path to the dimacs file")))
 		.subcommand(SubCommand::with_name("stats"))
-    .setting(AppSettings::SubcommandRequired)
-		.get_matches();
+    .setting(AppSettings::SubcommandRequiredElseHelp)
+    .get_matches();
 
 	match matches.subcommand() {
 		("dimacs", Some(matches)) => {
