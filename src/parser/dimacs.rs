@@ -30,8 +30,12 @@ fn parse_header(bytes: &[u8]) -> Option<(&[u8], usize, usize)> {
 	if let Option::Some(m) = RE.captures(bytes) {
 		assert_eq!(m.len(), 3);
 		assert_eq!(m.get(0).unwrap().start(), 0);
-		let variables = str::from_utf8(m.get(1).unwrap().as_bytes()).unwrap().parse::<usize>().unwrap();
-		let clauses = str::from_utf8(m.get(2).unwrap().as_bytes()).unwrap().parse::<usize>().unwrap();
+		let variables = unsafe {
+			str::from_utf8_unchecked(m.get(1).unwrap().as_bytes()).parse::<usize>().unwrap()
+		};
+		let clauses = unsafe {
+			str::from_utf8_unchecked(m.get(2).unwrap().as_bytes()).parse::<usize>().unwrap()
+		};
 		Option::Some((&bytes[m.get(0).unwrap().end()..], variables, clauses))
 	} else {
 		Option::None
