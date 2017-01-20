@@ -1,4 +1,5 @@
 extern crate clap;
+extern crate flate2;
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;

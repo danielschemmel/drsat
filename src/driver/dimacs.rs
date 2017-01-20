@@ -2,6 +2,7 @@ use ::std::fs::File;
 use ::std::io::Read;
 
 use ::clap::{ArgMatches, Arg, App};
+use flate2::read::GzDecoder;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Solve a query contained in a dimacs file, as used by the SAT competitions")
@@ -20,34 +21,57 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 pub fn main(matches: &ArgMatches) {
 	let path = matches.value_of("path").unwrap();
 	let time = matches.is_present("time");
-	run(path, time);
+	load(path, time);
 }
 
-fn run(path: &str, time: bool) {
+fn load(path: &str, time: bool) {
 	let mut sw = ::util::Stopwatch::new();
 	sw.start();
-	if let Result::Ok(mut file) = File::open(path) {
-		let mut buf = ::std::vec::Vec::<u8>::new();
-		if let Result::Ok(_) = file.read_to_end(&mut buf) {
-			sw.stop();
-			println!("Loaded {} bytes from {}", buf.len(), path);
-			if time {
-				println!("  in {}", sw);
+	if let Ok(mut file) = File::open(path) {
+		if path.ends_with(".gz") {
+			if let Ok(mut reader) = GzDecoder::new(file) {
+				let mut buf = ::std::vec::Vec::<u8>::new();
+				if let Ok(_) = reader.read_to_end(&mut buf) {
+					sw.stop();
+					println!("Loaded {} bytes from {}", buf.len(), path);
+					if time {
+						println!("  in {}", sw);
+					}
+					parse(path, time, &buf)
+				} else {
+					println!("Cannot read {} as GZip file", path);
+				}
+			} else {
+				println!("Cannot read {} as GZip file", path);
 			}
-			sw.start();
-			if let Some(_) = ::parser::dimacs::parse(&buf) {
+		} else {
+			let mut buf = ::std::vec::Vec::<u8>::new();
+			if let Ok(_) = file.read_to_end(&mut buf) {
 				sw.stop();
-				println!("Parsing complete");
+				println!("Loaded {} bytes from {}", buf.len(), path);
 				if time {
 					println!("  in {}", sw);
 				}
+				parse(path, time, &buf)
 			} else {
-				println!("Cannot parse {}", path);
+				println!("Cannot read {}", path);
 			}
-		} else {
-			println!("Cannot read {}", path);
 		}
 	} else {
 		println!("Cannot open {}", path);
+	}
+}
+
+fn parse(path: &str, time: bool, bytes: &[u8]) {
+	let mut sw = ::util::Stopwatch::new();
+	sw.start();
+	if let Some(_) = ::parser::dimacs::parse(bytes) {
+		sw.stop();
+		println!("Parsing complete");
+		if time {
+			println!("  in {}", sw);
+		}
+	} else {
+		println!("Cannot parse {}", path);
 	}
 }
