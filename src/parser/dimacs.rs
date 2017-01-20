@@ -45,7 +45,9 @@ fn parse_variable(bytes: &[u8]) -> Option<(&[u8], &str, bool)> {
 	if let Option::Some(m) = RE.captures(bytes) {
 		assert!(m.len() == 2 || m.len() == 3);
 		assert_eq!(m.get(0).unwrap().start(), 0);
-		let id = str::from_utf8(m.name("id").unwrap().as_bytes()).unwrap();
+		let id = unsafe {
+			str::from_utf8_unchecked(m.name("id").unwrap().as_bytes())
+		};
 		Option::Some((&bytes[m.get(0).unwrap().end()..], id, m.name("neg").is_some()))
 	} else {
 		Option::None
@@ -83,23 +85,25 @@ fn skip_end(bytes: &[u8]) -> &[u8] {
 
 pub fn parse(mut bytes: &[u8]) -> Option<Problem> {
 	bytes = skip_comments(bytes);
-	if let Option::Some((remainder, _, clauses)) = parse_header(bytes) {
+	if let Some((remainder, variables, clauses)) = parse_header(bytes) {
 		bytes = remainder;
 		let mut query = ProblemBuilder::new();
+		query.reserve_variables(variables);
+		query.reserve_clauses(clauses);
 		for _ in 0..clauses {
-			if let Option::Some(remaining) = parse_clause(bytes, &mut query) {
+			if let Some(remaining) = parse_clause(bytes, &mut query) {
 				bytes = remaining;
 			} else {
-				return Option::None;
+				return None;
 			}
 		}
 		bytes = skip_end(bytes);
 		if bytes.len() == 0 {
-			Option::Some(query.as_problem())
+			Some(query.as_problem())
 		} else {
-			Option::None
+			None
 		}
 	} else {
-		Option::None
+		None
 	}
 }

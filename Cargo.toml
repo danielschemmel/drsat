@@ -13,5 +13,6 @@ git2 = { version = "0.6" }
 
 [dependencies]
 clap  = { version = "2.20" }
-lazy_static = { version = "0.2" }
+lazy_static = { version = "*" }
 regex = { version = "0.2" }
+time = { version = "*" }

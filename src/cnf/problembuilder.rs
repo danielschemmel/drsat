@@ -27,6 +27,15 @@ impl ProblemBuilder {
 		}
 	}
 
+	pub fn reserve_clauses(&mut self, additional: usize) {
+		self.clauses.reserve(additional);
+	}
+
+	pub fn reserve_variables(&mut self, additional: usize) {
+		self.names.reserve(additional);
+		self.names2index.reserve(additional);
+	}
+
 	pub fn as_problem(self) -> Problem {
 		Problem::new(self.names, self.clauses)
 	}
