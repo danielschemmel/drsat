@@ -25,16 +25,24 @@ impl ::std::convert::From<::git2::Error> for Error {
 	}
 }
 
-fn same_content_as<P: AsRef<Path>>(path: P, content: &str) -> Result<bool, Error> {
+fn same_content_as(path: &Path, content: &str) -> Result<bool, Error> {
 	let mut current = String::new();
 	File::open(path)?.read_to_string(&mut current)?;
 	Ok(current == content)
 }
 
+fn update_file(path: &Path, content: &str) -> Result<(), Error> {
+	let update = !same_content_as(path, content).unwrap_or(false);
+	if update {
+		write!(BufWriter::new(File::create(path)?), "{}", content)?;
+	}
+	Ok(())
+}
+
 fn repository_description<P: AsRef<Path>>(dir: P) -> Result<String, Error> {
 	let repo = Repository::discover(dir)?;
 	let desc = repo.describe(&DescribeOptions::new().describe_tags().show_commit_oid_as_fallback(true))?;
-	let content = format!("static VERSION: &'static str = {:?};\n",
+	let content = format!("pub static VERSION: &'static str = {:?};\n",
 	                      desc.format(Some(DescribeFormatOptions::new()
 			                      .dirty_suffix(".+")
 			                      .abbreviated_size(16)))?);
@@ -48,10 +56,7 @@ fn write_version<P: AsRef<Path>>(dir: P) -> Result<(), Error> {
 	let path: &Path = path.as_ref();
 	create_dir_all(path)?;
 	let path = path.join("version.rs");
-
-	if !same_content_as(&path, &content).unwrap_or(false) {
-		write!(BufWriter::new(File::create(&path)?), "{}", content)?;
-	}
+	update_file(&path, &content)?;
 	Ok(())
 }
 

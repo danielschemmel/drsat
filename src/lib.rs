@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate clap;
 extern crate flate2;
 #[macro_use]
@@ -10,3 +11,5 @@ pub mod driver;
 pub mod gp;
 pub mod parser;
 pub mod util;
+
+include!(concat!(env!("OUT_DIR"), "/version.rs"));

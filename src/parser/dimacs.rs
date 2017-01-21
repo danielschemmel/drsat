@@ -1,7 +1,8 @@
+use ::std::io::Read;
 use ::std::str;
 use ::regex::bytes::Regex;
 
-use cnf::{Problem, ProblemBuilder};
+use ::cnf::{Problem, ProblemBuilder};
 
 fn skip_comments(bytes: &[u8]) -> &[u8] {
 	lazy_static! {
@@ -30,12 +31,8 @@ fn parse_header(bytes: &[u8]) -> Option<(&[u8], usize, usize)> {
 	if let Option::Some(m) = RE.captures(bytes) {
 		assert_eq!(m.len(), 3);
 		assert_eq!(m.get(0).unwrap().start(), 0);
-		let variables = unsafe {
-			str::from_utf8_unchecked(m.get(1).unwrap().as_bytes()).parse::<usize>().unwrap()
-		};
-		let clauses = unsafe {
-			str::from_utf8_unchecked(m.get(2).unwrap().as_bytes()).parse::<usize>().unwrap()
-		};
+		let variables = unsafe { str::from_utf8_unchecked(m.get(1).unwrap().as_bytes()).parse::<usize>().unwrap() };
+		let clauses = unsafe { str::from_utf8_unchecked(m.get(2).unwrap().as_bytes()).parse::<usize>().unwrap() };
 		Option::Some((&bytes[m.get(0).unwrap().end()..], variables, clauses))
 	} else {
 		Option::None
@@ -49,9 +46,7 @@ fn parse_variable(bytes: &[u8]) -> Option<(&[u8], &str, bool)> {
 	if let Option::Some(m) = RE.captures(bytes) {
 		assert!(m.len() == 2 || m.len() == 3);
 		assert_eq!(m.get(0).unwrap().start(), 0);
-		let id = unsafe {
-			str::from_utf8_unchecked(m.name("id").unwrap().as_bytes())
-		};
+		let id = unsafe { str::from_utf8_unchecked(m.name("id").unwrap().as_bytes()) };
 		Option::Some((&bytes[m.get(0).unwrap().end()..], id, m.name("neg").is_some()))
 	} else {
 		Option::None
@@ -87,8 +82,9 @@ fn skip_end(bytes: &[u8]) -> &[u8] {
 	&bytes[m.end()..]
 }
 
-pub fn parse(mut bytes: &[u8]) -> Option<Problem> {
-	bytes = skip_comments(bytes);
+pub fn parse<I: Iterator<Item = Result<u8, ::std::io::Error>>>(reader: I) -> Option<Problem> {
+	let bytes: Vec<u8> = reader.map(|x| x.unwrap()).collect();
+	let mut bytes = skip_comments(&bytes);
 	if let Some((remainder, variables, clauses)) = parse_header(bytes) {
 		bytes = remainder;
 		let mut query = ProblemBuilder::new();

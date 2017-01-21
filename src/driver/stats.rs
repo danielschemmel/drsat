@@ -6,10 +6,11 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Print some internal statistics")
 }
 
-pub fn main(_: &ArgMatches) {
+pub fn main(_: &ArgMatches) -> Result<(), super::Error> {
 	let stdout = ::std::io::stdout();
 	let mut handle = stdout.lock();
-	print(&mut handle).expect("Failed writing to locked stdout?!");
+	print(&mut handle)?;
+	Ok(())
 }
 
 fn print(f: &mut Write) -> Result<(), Error> {

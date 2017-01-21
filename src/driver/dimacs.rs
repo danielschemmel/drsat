@@ -2,10 +2,10 @@ use ::std::fs::File;
 use ::std::io::Read;
 
 use ::clap::{ArgMatches, Arg, App};
-use flate2::read::GzDecoder;
+use ::flate2::read::GzDecoder;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
-	app.about("Solve a query contained in a dimacs file, as used by the SAT competitions")
+	app.about("Parse and solve a dimacs file")
 		.arg(Arg::with_name("path")
 			.required(true)
 			.index(1)
@@ -16,62 +16,49 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 			.short("t")
 			.long("time")
 			.help("Time the solving process"))
+		.arg(Arg::with_name("dump-ast")
+			.long("dump-ast")
+			.help("Dump the AST of the problem after parsing it"))
 }
 
-pub fn main(matches: &ArgMatches) {
+pub fn main(matches: &ArgMatches) -> Result<(), super::Error> {
 	let path = matches.value_of("path").unwrap();
 	let time = matches.is_present("time");
-	load(path, time);
+	let mut sw = ::util::Stopwatch::new();
+
+	sw.start();
+	let mut reader = load(path)?;
+	sw.stop();
+	if time {
+		println!("[T] Opening file: {}", sw);
+	}
+
+	sw.start();
+	let ast = parse(&mut reader)?;
+	sw.stop();
+	if time {
+		println!("[T] Parsing file: {}", sw);
+	}
+	if matches.is_present("dump-ast") {
+		println!("{:?}", ast);
+	}
+
+	Ok(())
 }
 
-fn load(path: &str, time: bool) {
-	let mut sw = ::util::Stopwatch::new();
-	sw.start();
-	if let Ok(mut file) = File::open(path) {
-		if path.ends_with(".gz") {
-			if let Ok(mut reader) = GzDecoder::new(file) {
-				let mut buf = ::std::vec::Vec::<u8>::new();
-				if let Ok(_) = reader.read_to_end(&mut buf) {
-					sw.stop();
-					println!("Loaded {} bytes from {}", buf.len(), path);
-					if time {
-						println!("  in {}", sw);
-					}
-					parse(path, time, &buf)
-				} else {
-					println!("Cannot read {} as GZip file", path);
-				}
-			} else {
-				println!("Cannot read {} as GZip file", path);
-			}
-		} else {
-			let mut buf = ::std::vec::Vec::<u8>::new();
-			if let Ok(_) = file.read_to_end(&mut buf) {
-				sw.stop();
-				println!("Loaded {} bytes from {}", buf.len(), path);
-				if time {
-					println!("  in {}", sw);
-				}
-				parse(path, time, &buf)
-			} else {
-				println!("Cannot read {}", path);
-			}
-		}
+fn load(path: &str) -> Result<Box<Read>, super::Error> {
+	let file = File::open(path)?;
+	if path.ends_with(".gz") {
+		Ok(Box::new(GzDecoder::new(file)?)) // this is not a BufRead, even though it seems internally buffered well enough
 	} else {
-		println!("Cannot open {}", path);
+		Ok(Box::new(::std::io::BufReader::new(file)))
 	}
 }
 
-fn parse(path: &str, time: bool, bytes: &[u8]) {
-	let mut sw = ::util::Stopwatch::new();
-	sw.start();
-	if let Some(_) = ::parser::dimacs::parse(bytes) {
-		sw.stop();
-		println!("Parsing complete");
-		if time {
-			println!("  in {}", sw);
-		}
+fn parse(reader: &mut Read) -> Result<::cnf::Problem, super::Error> {
+	if let Some(ast) = ::parser::dimacs::parse(reader.bytes()) {
+		Ok(ast)
 	} else {
-		println!("Cannot parse {}", path);
+		Err(super::Error::Parse)
 	}
 }
