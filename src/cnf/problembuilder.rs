@@ -42,7 +42,7 @@ impl ProblemBuilder {
 
 	fn variable_id(&mut self, name: String) -> usize {
 		if let Some(id) = self.names2index.get(&name) {
-			return *id
+			return *id;
 		}
 		let id = self.names.len();
 		self.names.push(name.clone());

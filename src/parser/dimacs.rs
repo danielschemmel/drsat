@@ -71,7 +71,7 @@ fn skip_comments(reader: &mut BufRead) {
 				buf[0]
 			}
 		} else {
-			return
+			return;
 		};
 		if peek == b'c' {
 			skip_past_eol(reader);
@@ -91,7 +91,7 @@ fn parse_usize(reader: &mut BufRead) -> Result<usize, Error> {
 				if nothing {
 					return Err(Error::ExpectedInt);
 				} else {
-					return Ok(result)
+					return Ok(result);
 				}
 			}
 			let mut i: usize = 0;
