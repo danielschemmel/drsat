@@ -1,6 +1,5 @@
 use ::std::fmt;
 use ::std::io::{Error, Write};
-use ::std::mem;
 
 use super::{Clause, Literal};
 
@@ -35,15 +34,7 @@ impl fmt::Display for Problem {
 }
 
 pub fn print_stats(f: &mut Write, indent: &str) -> Result<(), Error> {
-	writeln!(f,
-	         "{}Literal size: {} bytes, alignment: {} bytes",
-	         indent,
-	         mem::size_of::<Literal>(),
-	         mem::align_of::<Literal>())?;
-	writeln!(f,
-	         "{}Clause size: {} bytes, alignment: {} bytes",
-	         indent,
-	         mem::size_of::<Clause>(),
-	         mem::align_of::<Clause>())?;
+	writeln!(f, "{}{:8} {:2}", indent, "Literal", ::util::Typeinfo::<Literal>::new())?;
+	writeln!(f, "{}{:8} {:2}", indent, "Clause", ::util::Typeinfo::<Clause>::new())?;
 	Ok(())
 }
