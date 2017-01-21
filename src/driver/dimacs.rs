@@ -1,5 +1,5 @@
 use ::std::fs::File;
-use ::std::io::{BufRead, Read};
+use ::std::io::BufRead;
 
 use ::clap::{ArgMatches, Arg, App};
 use ::flate2::read::GzDecoder;
