@@ -16,5 +16,4 @@ git2 = { version = "0.6" }
 clap  = { version = "2.20" }
 flate2 = { version = "*" }
 lazy_static = { version = "*" }
-regex = { version = "*" }
 time = { version = "*" }

@@ -1,6 +1,4 @@
 use ::std::io::BufRead;
-use ::std::str;
-use ::regex::bytes::Regex;
 
 use ::cnf::{Problem, ProblemBuilder};
 
@@ -197,15 +195,6 @@ fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder) -> Result<()
 	}
 }
 
-fn skip_end(bytes: &[u8]) -> &[u8] {
-	lazy_static! {
-		static ref RE: Regex = Regex::new(r"^[ \t\r\n]*(?:%[ \t\r\n]*0[ \t\r\n]*)?").unwrap();
-	}
-	let m = RE.find(bytes).unwrap();
-	assert_eq!(m.start(), 0);
-	&bytes[m.end()..]
-}
-
 pub fn parse(reader: &mut BufRead) -> Result<Problem, Error> {
 	skip_comments(reader);
 	let mut builder = ProblemBuilder::new();
@@ -215,5 +204,8 @@ pub fn parse(reader: &mut BufRead) -> Result<Problem, Error> {
 	for _ in 0..clauses {
 		parse_clause(reader, &mut builder)?;
 	}
+	// anything else in the file, we explicitly ignore
+	// considering the many different ways dimcs files end, this
+	// is explicitly done to increase compatibility
 	Ok(builder.as_problem())
 }
