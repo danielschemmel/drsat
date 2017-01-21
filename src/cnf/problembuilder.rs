@@ -40,12 +40,14 @@ impl ProblemBuilder {
 		Problem::new(self.names, self.clauses)
 	}
 
-	fn variable_id(&mut self, name: &str) -> usize {
-		let names = &mut self.names;
-		*self.names2index.entry(name.to_string()).or_insert_with(|| {
-			names.push(name.to_string());
-			names.len() - 1
-		})
+	fn variable_id(&mut self, name: String) -> usize {
+		if let Some(id) = self.names2index.get(&name) {
+			return *id
+		}
+		let id = self.names.len();
+		self.names.push(name.clone());
+		self.names2index.insert(name, id);
+		id
 	}
 }
 
@@ -55,7 +57,7 @@ pub struct ClauseBuilder<'a> {
 }
 
 impl<'a> ClauseBuilder<'a> {
-	pub fn add_literal(&mut self, name: &str, negated: bool) {
+	pub fn add_literal(&mut self, name: String, negated: bool) {
 		let id = self.problembuilder.variable_id(name);
 		self.problembuilder.clauses[self.index].push(Literal::new(id, negated));
 	}

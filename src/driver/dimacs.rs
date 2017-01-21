@@ -1,5 +1,5 @@
 use ::std::fs::File;
-use ::std::io::Read;
+use ::std::io::{BufRead, Read};
 
 use ::clap::{ArgMatches, Arg, App};
 use ::flate2::read::GzDecoder;
@@ -46,19 +46,21 @@ pub fn main(matches: &ArgMatches) -> Result<(), super::Error> {
 	Ok(())
 }
 
-fn load(path: &str) -> Result<Box<Read>, super::Error> {
+fn load(path: &str) -> Result<Box<BufRead>, super::Error> {
 	let file = File::open(path)?;
 	if path.ends_with(".gz") {
-		Ok(Box::new(GzDecoder::new(file)?)) // this is not a BufRead, even though it seems internally buffered well enough
+		Ok(Box::new(::std::io::BufReader::new(GzDecoder::new(file)?)))
 	} else {
 		Ok(Box::new(::std::io::BufReader::new(file)))
 	}
 }
 
-fn parse(reader: &mut Read) -> Result<::cnf::Problem, super::Error> {
-	if let Some(ast) = ::parser::dimacs::parse(reader.bytes()) {
-		Ok(ast)
-	} else {
-		Err(super::Error::Parse)
+fn parse(reader: &mut BufRead) -> Result<::cnf::Problem, super::Error> {
+	match ::parser::dimacs::parse(reader) {
+		Ok(ast) => Ok(ast),
+		Err(error) => {
+			println!("Parsing error: {:?}", error);
+			Err(super::Error::Parse)
+		}
 	}
 }

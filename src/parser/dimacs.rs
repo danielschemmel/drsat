@@ -1,75 +1,199 @@
-use ::std::io::Read;
+use ::std::io::BufRead;
 use ::std::str;
 use ::regex::bytes::Regex;
 
 use ::cnf::{Problem, ProblemBuilder};
 
-fn skip_comments(bytes: &[u8]) -> &[u8] {
-	lazy_static! {
-		static ref RE: Regex = Regex::new(r"^(?:[ \t]*c[^\n]*(?:\n|$))*").unwrap();
-	}
-	let m = RE.find(bytes).unwrap();
-	assert_eq!(m.start(), 0);
-	&bytes[m.end()..]
+#[derive(Debug)]
+pub enum Error {
+	Io(::std::io::Error),
+	Overflow,
+	EmptyClause,
+	ExpectedCNF,
+	ExpectedInt,
+	ExpectedIntOrNeg,
+	ExpectedP,
 }
 
-#[test]
-fn skip_comments_test() {
-	assert_eq!(skip_comments(b""), &b""[..]);
-	assert_eq!(skip_comments(b"c"), &b""[..]);
-	assert_eq!(skip_comments(b"c\n"), &b""[..]);
-	assert_eq!(skip_comments(b"c a b c\n"), &b""[..]);
-	assert_eq!(skip_comments(b"c a\nc b\n"), &b""[..]);
-	assert_eq!(skip_comments(b"p cnf 1 2"), &b"p cnf 1 2"[..]);
-	assert_eq!(skip_comments(b"c a\nc b\np cnf 1 2"), &b"p cnf 1 2"[..]);
-}
-
-fn parse_header(bytes: &[u8]) -> Option<(&[u8], usize, usize)> {
-	lazy_static! {
-		static ref RE: Regex = Regex::new(r"^[ \t]*p[ \t]+cnf[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*(?:\r?\n|$)").unwrap();
-	}
-	if let Option::Some(m) = RE.captures(bytes) {
-		assert_eq!(m.len(), 3);
-		assert_eq!(m.get(0).unwrap().start(), 0);
-		let variables = unsafe { str::from_utf8_unchecked(m.get(1).unwrap().as_bytes()).parse::<usize>().unwrap() };
-		let clauses = unsafe { str::from_utf8_unchecked(m.get(2).unwrap().as_bytes()).parse::<usize>().unwrap() };
-		Option::Some((&bytes[m.get(0).unwrap().end()..], variables, clauses))
-	} else {
-		Option::None
+impl ::std::convert::From<::std::io::Error> for Error {
+	fn from(e: ::std::io::Error) -> Self {
+		Error::Io(e)
 	}
 }
 
-fn parse_variable(bytes: &[u8]) -> Option<(&[u8], &str, bool)> {
-	lazy_static! {
-		static ref RE: Regex = Regex::new(r"^[ \t\r\n]*(?P<neg>-[ \t\r\n]*)?(?P<id>[0-9]+)").unwrap();
-	}
-	if let Option::Some(m) = RE.captures(bytes) {
-		assert!(m.len() == 2 || m.len() == 3);
-		assert_eq!(m.get(0).unwrap().start(), 0);
-		let id = unsafe { str::from_utf8_unchecked(m.name("id").unwrap().as_bytes()) };
-		Option::Some((&bytes[m.get(0).unwrap().end()..], id, m.name("neg").is_some()))
-	} else {
-		Option::None
-	}
-}
-
-fn parse_clause<'a>(mut bytes: &'a [u8], problembuilder: &mut ProblemBuilder) -> Option<&'a [u8]> {
-	let mut clause = problembuilder.new_clause();
+fn skip_ws(reader: &mut BufRead) {
 	loop {
-		if let Option::Some((remaining, id, negated)) = parse_variable(bytes) {
-			bytes = remaining;
-			if id == "0" {
-				break;
+		let (skip, len) = if let Ok(buf) = reader.fill_buf() {
+			if buf.len() == 0 {
+				return;
 			}
-			clause.add_literal(id, negated);
+			let mut i: usize = 0;
+			while i < buf.len() && (buf[i] == b' ' || buf[i] == b'\t' || buf[i] == b'\r' || buf[i] == b'\n') {
+				i += 1;
+			}
+			(i, buf.len())
 		} else {
-			return Option::None;
+			return;
+		};
+		reader.consume(skip);
+		if skip < len {
+			return;
 		}
 	}
+}
+
+fn skip_past_eol(reader: &mut BufRead) {
+	loop {
+		let (skip, len) = if let Ok(buf) = reader.fill_buf() {
+			if buf.len() == 0 {
+				return;
+			}
+			let mut i: usize = 0;
+			while i < buf.len() && (buf[i] != b'\n') {
+				i += 1;
+			}
+			(i, buf.len())
+		} else {
+			return;
+		};
+		reader.consume(skip);
+		if skip < len {
+			return;
+		}
+	}
+}
+
+fn skip_comments(reader: &mut BufRead) {
+	loop {
+		skip_ws(reader);
+		let peek = if let Ok(buf) = reader.fill_buf() {
+			if buf.len() == 0 {
+				return;
+			} else {
+				buf[0]
+			}
+		} else {
+			return
+		};
+		if peek == b'c' {
+			skip_past_eol(reader);
+		} else {
+			return;
+		}
+	}
+}
+
+fn parse_usize(reader: &mut BufRead) -> Result<usize, Error> {
+	let mut result: usize = 0;
+	let mut nothing = true;
+	loop {
+		let read = {
+			let buf = reader.fill_buf()?;
+			if buf.len() == 0 {
+				if nothing {
+					return Err(Error::ExpectedInt);
+				} else {
+					return Ok(result)
+				}
+			}
+			let mut i: usize = 0;
+			while i < buf.len() {
+				let dig = buf[i].wrapping_sub(b'0');
+				if dig <= 9 {
+					i += 1;
+					nothing = false;
+					let next = result.wrapping_mul(10).wrapping_add(dig as usize);
+					if next < result {
+						return Err(Error::Overflow);
+					}
+					result = next;
+				} else if nothing {
+					return Err(Error::ExpectedInt);
+				} else {
+					return Ok(result);
+				}
+			}
+			i
+		};
+		reader.consume(read);
+	}
+}
+
+fn parse_header(reader: &mut BufRead) -> Result<(usize, usize), Error> {
+	skip_ws(reader);
+	if !{
+		let buf = reader.fill_buf()?;
+		buf.len() >= 1 && buf[0] == b'p'
+	} {
+		return Err(Error::ExpectedP);
+	}
+	reader.consume(1);
+	skip_ws(reader);
+	if !{
+		let buf = reader.fill_buf()?;
+		buf.len() >= 3 && buf[0] == b'c' && buf[1] == b'n' && buf[2] == b'f'
+	} {
+		return Err(Error::ExpectedCNF);
+	}
+	reader.consume(3);
+	skip_ws(reader);
+	let variables = parse_usize(reader)?;
+	skip_ws(reader);
+	let clauses = parse_usize(reader)?;
+	Ok((variables, clauses))
+}
+
+fn parse_variable(reader: &mut BufRead) -> Result<(String, bool), Error> {
+	skip_ws(reader);
+	let neg = {
+		let buf = reader.fill_buf()?;
+		buf.len() >= 1 && buf[0] == b'-'
+	};
+	if neg {
+		reader.consume(1);
+		skip_ws(reader);
+	}
+	let mut name = String::new();
+	loop {
+		let (read, done) = {
+			let buf = reader.fill_buf()?;
+			if buf.len() == 0 {
+				(0, true)
+			} else {
+				let mut i: usize = 0;
+				while i < buf.len() && buf[i].wrapping_sub(b'0') <= 9 {
+					name.push(buf[i] as char);
+					i += 1;
+				}
+				(i, i < buf.len())
+			}
+		};
+		reader.consume(read);
+		if done {
+			return if name.len() > 0 {
+				Ok((name, neg))
+			} else {
+				Err(Error::ExpectedInt)
+			};
+		}
+	}
+}
+
+fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder) -> Result<(), Error> {
+	let mut clause = builder.new_clause();
+	loop {
+		let (name, neg) = parse_variable(reader)?;
+		if name == "0" {
+			break;
+		}
+		clause.add_literal(name, neg);
+	}
 	if clause.len() != 0 {
-		Option::Some(bytes)
+		Ok(())
 	} else {
-		Option::None
+		// this does not really have to be an error
+		// an empty clause would by most be considered trivially UNSAT
+		Err(Error::EmptyClause)
 	}
 }
 
@@ -82,28 +206,14 @@ fn skip_end(bytes: &[u8]) -> &[u8] {
 	&bytes[m.end()..]
 }
 
-pub fn parse<I: Iterator<Item = Result<u8, ::std::io::Error>>>(reader: I) -> Option<Problem> {
-	let bytes: Vec<u8> = reader.map(|x| x.unwrap()).collect();
-	let mut bytes = skip_comments(&bytes);
-	if let Some((remainder, variables, clauses)) = parse_header(bytes) {
-		bytes = remainder;
-		let mut query = ProblemBuilder::new();
-		query.reserve_variables(variables);
-		query.reserve_clauses(clauses);
-		for _ in 0..clauses {
-			if let Some(remaining) = parse_clause(bytes, &mut query) {
-				bytes = remaining;
-			} else {
-				return None;
-			}
-		}
-		bytes = skip_end(bytes);
-		if bytes.len() == 0 {
-			Some(query.as_problem())
-		} else {
-			None
-		}
-	} else {
-		None
+pub fn parse(reader: &mut BufRead) -> Result<Problem, Error> {
+	skip_comments(reader);
+	let mut builder = ProblemBuilder::new();
+	let (variables, clauses) = parse_header(reader)?;
+	builder.reserve_variables(variables);
+	builder.reserve_clauses(clauses);
+	for _ in 0..clauses {
+		parse_clause(reader, &mut builder)?;
 	}
+	Ok(builder.as_problem())
 }
