@@ -1,4 +1,5 @@
 use ::std::collections::HashMap;
+use ::std::collections::hash_map::Entry;
 use super::Literal;
 use super::Problem;
 
@@ -41,13 +42,15 @@ impl ProblemBuilder {
 	}
 
 	fn variable_id(&mut self, name: String) -> usize {
-		if let Some(id) = self.names2index.get(&name) {
-			return *id;
+		match self.names2index.entry(name) {
+			Entry::Vacant(vacant_entry) => {
+				let id = self.names.len();
+				self.names.push(vacant_entry.key().clone());
+				vacant_entry.insert(id);
+				id
+			},
+			Entry::Occupied(occupied_entry) => *occupied_entry.get()
 		}
-		let id = self.names.len();
-		self.names.push(name.clone());
-		self.names2index.insert(name, id);
-		id
 	}
 }
 
