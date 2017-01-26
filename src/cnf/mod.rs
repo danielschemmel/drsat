@@ -9,3 +9,6 @@ pub use self::problem::Problem;
 
 mod problembuilder;
 pub use self::problembuilder::ProblemBuilder;
+
+pub mod variable;
+pub use self::variable::Variable;
