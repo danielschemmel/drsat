@@ -24,4 +24,8 @@ impl Clause {
 		}
 		Ok(())
 	}
+
+	pub fn len(&self) -> usize {
+		self.literals.len()
+	}
 }
