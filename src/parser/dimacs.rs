@@ -28,13 +28,13 @@ fn skip_ws(reader: &mut BufRead) -> io::Result<()> {
 				return Ok(());
 			}
 
-			let mut i: usize = 0;
-			while i < buf.len() && (buf[i] == b' ' || buf[i] == b'\t' || buf[i] == b'\r' || buf[i] == b'\n') {
-				i += 1;
-			}
-			(i, buf.len())
+			let skip_count = buf.iter().position(|&b| !(b as char).is_whitespace());
+
+			(skip_count.unwrap_or(buf.len()), buf.len())
 		};
+
 		reader.consume(skip);
+
 		if skip < len {
 			return Ok(());
 		}
