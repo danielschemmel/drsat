@@ -2,6 +2,7 @@
 pub struct Variable {
 	name: String,
 	value: bool,
+	clauses: Vec<usize>,
 }
 
 impl Variable {
@@ -9,6 +10,7 @@ impl Variable {
 		Variable{
 			name: name,
 			value: false,
+			clauses: Vec::new(),
 		}
 	}
 
