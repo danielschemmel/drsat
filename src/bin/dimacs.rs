@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate clap;
-use ::clap::{App, Arg, AppSettings, Shell};
+use clap::{App, Arg, AppSettings, Shell};
 
 extern crate libdsat;
 

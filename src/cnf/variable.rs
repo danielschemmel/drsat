@@ -7,7 +7,7 @@ pub struct Variable {
 
 impl Variable {
 	pub fn new(name: String) -> Variable {
-		Variable{
+		Variable {
 			name: name,
 			value: false,
 			clauses: Vec::new(),

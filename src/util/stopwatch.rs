@@ -1,5 +1,5 @@
-use ::std::fmt;
-use ::time::{Duration, SteadyTime};
+use std::fmt;
+use time::{Duration, SteadyTime};
 
 #[derive(Debug)]
 pub struct Stopwatch {

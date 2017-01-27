@@ -1,6 +1,6 @@
-use ::std::collections::VecDeque;
-use ::std::fmt;
-use ::std::io::{Error, Write};
+use std::collections::VecDeque;
+use std::fmt;
+use std::io::{Error, Write};
 
 use super::{Clause, Literal, Variable};
 
@@ -27,8 +27,8 @@ impl Problem {
 		loop {
 			let v = VecDeque::<usize>::new();
 			match self.propagate(v) {
-				PropagationResult::OK => { },
-				PropagationResult::UNSAT(_) => { },
+				PropagationResult::OK => {}
+				PropagationResult::UNSAT(_) => {}
 			}
 		}
 	}
@@ -55,7 +55,15 @@ impl fmt::Display for Problem {
 }
 
 pub fn print_stats(f: &mut Write, indent: &str) -> Result<(), Error> {
-	writeln!(f, "{}{:8} {:2}", indent, "Literal", ::util::Typeinfo::<Literal>::new())?;
-	writeln!(f, "{}{:8} {:2}", indent, "Clause", ::util::Typeinfo::<Clause>::new())?;
+	writeln!(f,
+	         "{}{:8} {:2}",
+	         indent,
+	         "Literal",
+	         ::util::Typeinfo::<Literal>::new())?;
+	writeln!(f,
+	         "{}{:8} {:2}",
+	         indent,
+	         "Clause",
+	         ::util::Typeinfo::<Clause>::new())?;
 	Ok(())
 }

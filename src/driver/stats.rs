@@ -1,6 +1,6 @@
-use ::std::io::{Error, Write};
+use std::io::{Error, Write};
 
-use ::clap::{ArgMatches, App};
+use clap::{ArgMatches, App};
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Print some internal statistics")

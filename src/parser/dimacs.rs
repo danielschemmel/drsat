@@ -1,6 +1,6 @@
-use ::std::io::BufRead;
+use std::io::BufRead;
 
-use ::cnf::{Problem, ProblemBuilder};
+use cnf::{Problem, ProblemBuilder};
 
 #[derive(Debug)]
 pub enum Error {

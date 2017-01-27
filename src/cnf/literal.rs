@@ -1,4 +1,4 @@
-use ::std::fmt;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct Literal {

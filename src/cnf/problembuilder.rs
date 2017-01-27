@@ -1,5 +1,5 @@
-use ::std::collections::HashMap;
-use ::std::collections::hash_map::Entry;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use super::Literal;
 use super::Problem;
 
@@ -48,8 +48,8 @@ impl ProblemBuilder {
 				self.names.push(vacant_entry.key().clone());
 				vacant_entry.insert(id);
 				id
-			},
-			Entry::Occupied(occupied_entry) => *occupied_entry.get()
+			}
+			Entry::Occupied(occupied_entry) => *occupied_entry.get(),
 		}
 	}
 }

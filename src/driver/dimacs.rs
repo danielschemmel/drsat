@@ -1,8 +1,8 @@
-use ::std::fs::File;
-use ::std::io::BufRead;
+use std::fs::File;
+use std::io::BufRead;
 
-use ::clap::{ArgMatches, Arg, App};
-use ::flate2::read::GzDecoder;
+use clap::{ArgMatches, Arg, App};
+use flate2::read::GzDecoder;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Parse and solve a dimacs file")

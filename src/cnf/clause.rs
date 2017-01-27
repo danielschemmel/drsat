@@ -1,4 +1,4 @@
-use ::std::fmt;
+use std::fmt;
 use super::{Literal, Variable};
 
 #[derive(Debug)]
