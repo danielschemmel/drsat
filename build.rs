@@ -3,8 +3,6 @@ use ::std::fs::{File, create_dir_all};
 use ::std::io::{Write, Read, BufWriter};
 use ::std::path::Path;
 
-// `error_chain!` can recurse deeply
-//#![recursion_limit = "1024"]
 #[macro_use]
 extern crate error_chain;
 
