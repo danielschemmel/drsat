@@ -1,5 +1,5 @@
 use ::std::fmt;
-use super::Literal;
+use super::{Literal, Variable};
 
 #[derive(Debug)]
 pub struct Clause {
@@ -15,12 +15,12 @@ impl Clause {
 		}
 	}
 
-	pub fn print(&self, f: &mut fmt::Formatter, names: &[String]) -> fmt::Result {
+	pub fn print(&self, f: &mut fmt::Formatter, variables: &[Variable]) -> fmt::Result {
 		for (i, literal) in self.literals.iter().enumerate() {
 			if i != 0 {
 				write!(f, " ")?;
 			}
-			literal.print(f, &names[literal.id()])?;
+			literal.print(f, &variables[literal.id()].name())?;
 		}
 		Ok(())
 	}

@@ -1,24 +1,20 @@
 use ::std::fmt;
 use ::std::io::{Error, Write};
 
-use super::{Clause, Literal};
+use super::{Clause, Literal, Variable};
 
 #[derive(Debug)]
 pub struct Problem {
-	names: Vec<String>,
+	variables: Vec<Variable>,
 	clauses: Vec<Clause>,
 }
 
 impl Problem {
-	pub fn new(names: Vec<String>, mut clauses: Vec<Vec<Literal>>) -> Problem {
-		let mut problem = Problem {
-			names: names,
-			clauses: Vec::with_capacity(clauses.len()),
-		};
-		for vec in clauses.drain(..) {
-			problem.clauses.push(Clause::new(vec, 1));
+	pub fn new(mut names: Vec<String>, mut clauses: Vec<Vec<Literal>>) -> Problem {
+		Problem {
+			variables: names.drain(..).map(|s| Variable::new(s)).collect(),
+			clauses: clauses.drain(..).map(|c| Clause::new(c, 1)).collect(),
 		}
-		problem
 	}
 }
 
@@ -26,7 +22,7 @@ impl fmt::Display for Problem {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		writeln!(f, "Problem of {} clauses:", self.clauses.len())?;
 		for clause in &self.clauses {
-			clause.print(f, &self.names)?;
+			clause.print(f, &self.variables)?;
 			writeln!(f, "")?;
 		}
 		Ok(())
