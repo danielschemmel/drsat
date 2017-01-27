@@ -63,7 +63,7 @@ fn skip_past_eol(reader: &mut BufRead) -> io::Result<()> {
 	}
 }
 
-fn skip_comments(reader: &mut BufRead) -> io::Result<()>{
+fn skip_comments(reader: &mut BufRead) -> io::Result<()> {
 	loop {
 		skip_ws(reader)?;
 		let peek = {
