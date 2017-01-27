@@ -10,10 +10,10 @@ pub struct Problem {
 }
 
 impl Problem {
-	pub fn new(mut names: Vec<String>, mut clauses: Vec<Vec<Literal>>) -> Problem {
+	pub fn new(names: Vec<String>, clauses: Vec<Vec<Literal>>) -> Problem {
 		Problem {
-			variables: names.drain(..).map(|s| Variable::new(s)).collect(),
-			clauses: clauses.drain(..).map(|c| Clause::new(c, 1)).collect(),
+			variables: names.into_iter().map(|s| Variable::new(s)).collect(),
+			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
 		}
 	}
 }
