@@ -3,35 +3,37 @@ use ::std::fs::{File, create_dir_all};
 use ::std::io::{Write, Read, BufWriter};
 use ::std::path::Path;
 
+// `error_chain!` can recurse deeply
+//#![recursion_limit = "1024"]
+#[macro_use]
+extern crate error_chain;
+
 extern crate git2;
 use ::git2::{Repository, DescribeOptions, DescribeFormatOptions};
 
-#[derive(Debug)]
-enum Error {
-	Io(::std::io::Error),
-	Git(::git2::Error),
-	MissingEnvVar,
-}
-
-impl ::std::convert::From<::std::io::Error> for Error {
-	fn from(e: ::std::io::Error) -> Self {
-		Error::Io(e)
+mod errors {
+	error_chain! {
+		foreign_links {
+			Io(::std::io::Error);
+			Git(::git2::Error);
+		}
+		errors {
+			MissingEnvVar {
+				description("An environment variable is missing")
+			}
+		}
 	}
 }
 
-impl ::std::convert::From<::git2::Error> for Error {
-	fn from(e: ::git2::Error) -> Self {
-		Error::Git(e)
-	}
-}
+use errors::*;
 
-fn same_content_as(path: &Path, content: &str) -> Result<bool, Error> {
+fn same_content_as(path: &Path, content: &str) -> Result<bool> {
 	let mut current = String::new();
 	File::open(path)?.read_to_string(&mut current)?;
 	Ok(current == content)
 }
 
-fn update_file(path: &Path, content: &str) -> Result<(), Error> {
+fn update_file(path: &Path, content: &str) -> Result<()> {
 	let update = !same_content_as(path, content).unwrap_or(false);
 	if update {
 		write!(BufWriter::new(File::create(path)?), "{}", content)?;
@@ -39,7 +41,7 @@ fn update_file(path: &Path, content: &str) -> Result<(), Error> {
 	Ok(())
 }
 
-fn repository_description<P: AsRef<Path>>(dir: P) -> Result<String, Error> {
+fn repository_description<P: AsRef<Path>>(dir: P) -> Result<String> {
 	let repo = Repository::discover(dir)?;
 	let desc = repo.describe(&DescribeOptions::new().describe_tags().show_commit_oid_as_fallback(true))?;
 	let content = format!("pub static VERSION: &'static str = {:?};\n",
@@ -49,10 +51,10 @@ fn repository_description<P: AsRef<Path>>(dir: P) -> Result<String, Error> {
 	Ok(content)
 }
 
-fn write_version<P: AsRef<Path>>(dir: P) -> Result<(), Error> {
+fn write_version<P: AsRef<Path>>(dir: P) -> Result<()> {
 	let content = repository_description(dir).unwrap_or(String::from("static VERSION: &'static str = \"UNKNOWN\""));
 
-	let path = env::var_os("OUT_DIR").ok_or(Error::MissingEnvVar)?;
+	let path = env::var_os("OUT_DIR").ok_or(ErrorKind::MissingEnvVar)?;
 	let path: &Path = path.as_ref();
 	create_dir_all(path)?;
 	let path = path.join("version.rs");
@@ -60,6 +62,9 @@ fn write_version<P: AsRef<Path>>(dir: P) -> Result<(), Error> {
 	Ok(())
 }
 
-fn main() {
-	write_version(".").expect("Could not get git version");
+fn run() -> Result<()> {
+	write_version(".")?;
+	Ok(())
 }
+
+quick_main!(run);
