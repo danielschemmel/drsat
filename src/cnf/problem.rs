@@ -18,7 +18,7 @@ enum PropagationResult {
 impl Problem {
 	pub fn new(names: Vec<String>, clauses: Vec<Vec<Literal>>) -> Problem {
 		Problem {
-			variables: names.into_iter().map(|s| Variable::new(s)).collect(),
+			variables: names.into_iter().map(Variable::new).collect(),
 			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
 		}
 	}

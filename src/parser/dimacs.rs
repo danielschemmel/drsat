@@ -1,10 +1,10 @@
-use std::io::BufRead;
+use std::io::{self, BufRead};
 
 use cnf::{Problem, ProblemBuilder};
 
 #[derive(Debug)]
 pub enum Error {
-	Io(::std::io::Error),
+	Io(io::Error),
 	Overflow,
 	EmptyClause,
 	ExpectedCNF,
@@ -13,70 +13,71 @@ pub enum Error {
 	ExpectedP,
 }
 
-impl ::std::convert::From<::std::io::Error> for Error {
-	fn from(e: ::std::io::Error) -> Self {
+impl ::std::convert::From<io::Error> for Error {
+	fn from(e: io::Error) -> Self {
 		Error::Io(e)
 	}
 }
 
-fn skip_ws(reader: &mut BufRead) {
+fn skip_ws(reader: &mut BufRead) -> io::Result<()> {
 	loop {
-		let (skip, len) = if let Ok(buf) = reader.fill_buf() {
+		let (skip, len) = {
+			let buf = reader.fill_buf()?;
+
 			if buf.len() == 0 {
-				return;
+				return Ok(());
 			}
+
 			let mut i: usize = 0;
 			while i < buf.len() && (buf[i] == b' ' || buf[i] == b'\t' || buf[i] == b'\r' || buf[i] == b'\n') {
 				i += 1;
 			}
 			(i, buf.len())
-		} else {
-			return;
 		};
 		reader.consume(skip);
 		if skip < len {
-			return;
+			return Ok(());
 		}
 	}
 }
 
-fn skip_past_eol(reader: &mut BufRead) {
+fn skip_past_eol(reader: &mut BufRead) -> io::Result<()> {
 	loop {
-		let (skip, len) = if let Ok(buf) = reader.fill_buf() {
+		let (skip, len) = {
+			let buf = reader.fill_buf()?;
+
 			if buf.len() == 0 {
-				return;
+				return Ok(());
 			}
+
 			let mut i: usize = 0;
 			while i < buf.len() && (buf[i] != b'\n') {
 				i += 1;
 			}
 			(i, buf.len())
-		} else {
-			return;
 		};
 		reader.consume(skip);
 		if skip < len {
-			return;
+			return Ok(());
 		}
 	}
 }
 
-fn skip_comments(reader: &mut BufRead) {
+fn skip_comments(reader: &mut BufRead) -> io::Result<()>{
 	loop {
-		skip_ws(reader);
-		let peek = if let Ok(buf) = reader.fill_buf() {
+		skip_ws(reader)?;
+		let peek = {
+			let buf = reader.fill_buf()?;
 			if buf.len() == 0 {
-				return;
+				return Ok(());
 			} else {
 				buf[0]
 			}
-		} else {
-			return;
 		};
 		if peek == b'c' {
-			skip_past_eol(reader);
+			skip_past_eol(reader)?;
 		} else {
-			return;
+			return Ok(());
 		}
 	}
 }
@@ -118,7 +119,7 @@ fn parse_usize(reader: &mut BufRead) -> Result<usize, Error> {
 }
 
 fn parse_header(reader: &mut BufRead) -> Result<(usize, usize), Error> {
-	skip_ws(reader);
+	skip_ws(reader)?;
 	if !{
 		let buf = reader.fill_buf()?;
 		buf.len() >= 1 && buf[0] == b'p'
@@ -126,7 +127,7 @@ fn parse_header(reader: &mut BufRead) -> Result<(usize, usize), Error> {
 		return Err(Error::ExpectedP);
 	}
 	reader.consume(1);
-	skip_ws(reader);
+	skip_ws(reader)?;
 	if !{
 		let buf = reader.fill_buf()?;
 		buf.len() >= 3 && buf[0] == b'c' && buf[1] == b'n' && buf[2] == b'f'
@@ -134,22 +135,22 @@ fn parse_header(reader: &mut BufRead) -> Result<(usize, usize), Error> {
 		return Err(Error::ExpectedCNF);
 	}
 	reader.consume(3);
-	skip_ws(reader);
+	skip_ws(reader)?;
 	let variables = parse_usize(reader)?;
-	skip_ws(reader);
+	skip_ws(reader)?;
 	let clauses = parse_usize(reader)?;
 	Ok((variables, clauses))
 }
 
 fn parse_variable(reader: &mut BufRead) -> Result<(String, bool), Error> {
-	skip_ws(reader);
+	skip_ws(reader)?;
 	let neg = {
 		let buf = reader.fill_buf()?;
 		buf.len() >= 1 && buf[0] == b'-'
 	};
 	if neg {
 		reader.consume(1);
-		skip_ws(reader);
+		skip_ws(reader)?;
 	}
 	let mut name = String::new();
 	loop {
@@ -196,7 +197,7 @@ fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder) -> Result<()
 }
 
 pub fn parse(reader: &mut BufRead) -> Result<Problem, Error> {
-	skip_comments(reader);
+	skip_comments(reader)?;
 	let mut builder = ProblemBuilder::new();
 	let (variables, clauses) = parse_header(reader)?;
 	builder.reserve_variables(variables);
