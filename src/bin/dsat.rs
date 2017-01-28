@@ -21,9 +21,10 @@ fn gen_cli() -> App<'static, 'static> {
 
 fn main() {
 	match gen_cli().get_matches().subcommand() {
-		("completion", Some(matches)) => libdsat::driver::completion::run_command(matches, gen_cli(), NAME),
-		("dimacs", Some(matches)) => libdsat::driver::dimacs::main(matches),
-		("stats", Some(matches)) => libdsat::driver::stats::main(matches),
-		_ => unreachable!(),
-	}.unwrap_or_else(|ref err| err.terminate());
+			("completion", Some(matches)) => libdsat::driver::completion::run_command(matches, gen_cli(), NAME),
+			("dimacs", Some(matches)) => libdsat::driver::dimacs::main(matches),
+			("stats", Some(matches)) => libdsat::driver::stats::main(matches),
+			_ => unreachable!(),
+		}
+		.unwrap_or_else(|ref err| err.terminate());
 }
