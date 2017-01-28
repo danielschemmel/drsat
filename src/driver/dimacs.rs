@@ -4,6 +4,8 @@ use std::io::BufRead;
 use clap::{ArgMatches, Arg, App};
 use flate2::read::GzDecoder;
 
+use super::errors::*;
+
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Parse and solve a dimacs file")
 		.arg(Arg::with_name("path")
@@ -21,7 +23,7 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 			.help("Dump the AST of the problem after parsing it"))
 }
 
-pub fn main(matches: &ArgMatches) -> Result<(), super::Error> {
+pub fn main(matches: &ArgMatches) -> Result<()> {
 	let path = matches.value_of("path").unwrap();
 	let time = matches.is_present("time");
 	let mut sw = ::util::Stopwatch::new();
@@ -46,7 +48,7 @@ pub fn main(matches: &ArgMatches) -> Result<(), super::Error> {
 	Ok(())
 }
 
-fn load(path: &str) -> Result<Box<BufRead>, super::Error> {
+fn load(path: &str) -> Result<Box<BufRead>> {
 	let file = File::open(path)?;
 	if path.ends_with(".gz") {
 		Ok(Box::new(::std::io::BufReader::new(GzDecoder::new(file)?)))
@@ -55,12 +57,6 @@ fn load(path: &str) -> Result<Box<BufRead>, super::Error> {
 	}
 }
 
-fn parse(reader: &mut BufRead) -> Result<::cnf::Problem, super::Error> {
-	match ::parser::dimacs::parse(reader) {
-		Ok(ast) => Ok(ast),
-		Err(error) => {
-			println!("Parsing error: {:?}", error);
-			Err(super::Error::Parse)
-		}
-	}
+fn parse(reader: &mut BufRead) -> Result<::cnf::Problem> {
+	Ok(::parser::dimacs::parse(reader)?)
 }

@@ -1,25 +1,10 @@
-use std::io::{self, BufRead};
+use std::io::BufRead;
 
 use cnf::{Problem, ProblemBuilder};
 
-#[derive(Debug)]
-pub enum Error {
-	Io(io::Error),
-	Overflow,
-	EmptyClause,
-	ExpectedCNF,
-	ExpectedInt,
-	ExpectedIntOrNeg,
-	ExpectedP,
-}
+use super::errors::*;
 
-impl ::std::convert::From<io::Error> for Error {
-	fn from(e: io::Error) -> Self {
-		Error::Io(e)
-	}
-}
-
-fn skip_ws(reader: &mut BufRead) -> io::Result<()> {
+fn skip_ws(reader: &mut BufRead) -> Result<()> {
 	loop {
 		let (skip, len) = {
 			let buf = reader.fill_buf()?;
@@ -41,7 +26,7 @@ fn skip_ws(reader: &mut BufRead) -> io::Result<()> {
 	}
 }
 
-fn skip_past_eol(reader: &mut BufRead) -> io::Result<()> {
+fn skip_past_eol(reader: &mut BufRead) -> Result<()> {
 	loop {
 		let (skip, len) = {
 			let buf = reader.fill_buf()?;
@@ -63,7 +48,7 @@ fn skip_past_eol(reader: &mut BufRead) -> io::Result<()> {
 	}
 }
 
-fn skip_comments(reader: &mut BufRead) -> io::Result<()> {
+fn skip_comments(reader: &mut BufRead) -> Result<()> {
 	loop {
 		skip_ws(reader)?;
 		let peek = {
@@ -82,7 +67,7 @@ fn skip_comments(reader: &mut BufRead) -> io::Result<()> {
 	}
 }
 
-fn parse_usize(reader: &mut BufRead) -> Result<usize, Error> {
+fn parse_usize(reader: &mut BufRead) -> Result<usize> {
 	let mut result: usize = 0;
 	let mut nothing = true;
 	loop {
@@ -90,7 +75,7 @@ fn parse_usize(reader: &mut BufRead) -> Result<usize, Error> {
 			let buf = reader.fill_buf()?;
 			if buf.len() == 0 {
 				if nothing {
-					return Err(Error::ExpectedInt);
+					bail!(ErrorKind::ExpectedInt);
 				} else {
 					return Ok(result);
 				}
@@ -103,11 +88,11 @@ fn parse_usize(reader: &mut BufRead) -> Result<usize, Error> {
 					nothing = false;
 					let next = result.wrapping_mul(10).wrapping_add(dig as usize);
 					if next < result {
-						return Err(Error::Overflow);
+						bail!(ErrorKind::Overflow);
 					}
 					result = next;
 				} else if nothing {
-					return Err(Error::ExpectedInt);
+					bail!(ErrorKind::ExpectedInt);
 				} else {
 					return Ok(result);
 				}
@@ -118,13 +103,13 @@ fn parse_usize(reader: &mut BufRead) -> Result<usize, Error> {
 	}
 }
 
-fn parse_header(reader: &mut BufRead) -> Result<(usize, usize), Error> {
+fn parse_header(reader: &mut BufRead) -> Result<(usize, usize)> {
 	skip_ws(reader)?;
 	if !{
 		let buf = reader.fill_buf()?;
 		buf.len() >= 1 && buf[0] == b'p'
 	} {
-		return Err(Error::ExpectedP);
+		bail!(ErrorKind::ExpectedP);
 	}
 	reader.consume(1);
 	skip_ws(reader)?;
@@ -132,7 +117,7 @@ fn parse_header(reader: &mut BufRead) -> Result<(usize, usize), Error> {
 		let buf = reader.fill_buf()?;
 		buf.len() >= 3 && buf[0] == b'c' && buf[1] == b'n' && buf[2] == b'f'
 	} {
-		return Err(Error::ExpectedCNF);
+		bail!(ErrorKind::ExpectedCNF);
 	}
 	reader.consume(3);
 	skip_ws(reader)?;
@@ -142,7 +127,7 @@ fn parse_header(reader: &mut BufRead) -> Result<(usize, usize), Error> {
 	Ok((variables, clauses))
 }
 
-fn parse_variable(reader: &mut BufRead) -> Result<(String, bool), Error> {
+fn parse_variable(reader: &mut BufRead) -> Result<(String, bool)> {
 	skip_ws(reader)?;
 	let neg = {
 		let buf = reader.fill_buf()?;
@@ -172,13 +157,13 @@ fn parse_variable(reader: &mut BufRead) -> Result<(String, bool), Error> {
 			return if name.len() > 0 {
 				Ok((name, neg))
 			} else {
-				Err(Error::ExpectedInt)
+				Err(ErrorKind::ExpectedInt.into())
 			};
 		}
 	}
 }
 
-fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder) -> Result<(), Error> {
+fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder) -> Result<()> {
 	let mut clause = builder.new_clause();
 	loop {
 		let (name, neg) = parse_variable(reader)?;
@@ -192,11 +177,11 @@ fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder) -> Result<()
 	} else {
 		// this does not really have to be an error
 		// an empty clause would by most be considered trivially UNSAT
-		Err(Error::EmptyClause)
+		Err(ErrorKind::EmptyClause.into())
 	}
 }
 
-pub fn parse(reader: &mut BufRead) -> Result<Problem, Error> {
+pub fn parse(reader: &mut BufRead) -> Result<Problem> {
 	skip_comments(reader)?;
 	let mut builder = ProblemBuilder::new();
 	let (variables, clauses) = parse_header(reader)?;

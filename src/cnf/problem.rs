@@ -42,7 +42,7 @@ impl Problem {
 		let mut gc_pos = 0u32;
 		let mut conflict = ::std::usize::MAX;
 		loop {
-			self.updateQ(conflict);
+			self.update_q(conflict);
 			if conflict != ::std::usize::MAX {
 				if dl == 0 {
 					return false;
@@ -106,7 +106,7 @@ impl Problem {
 		unimplemented!();
 	}
 
-	fn updateQ(&self, conflict: usize) {
+	fn update_q(&self, conflict: usize) {
 		unimplemented!();
 	}
 

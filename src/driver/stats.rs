@@ -1,19 +1,21 @@
-use std::io::{Error, Write};
+use std::io::Write;
 
 use clap::{ArgMatches, App};
+
+use super::errors::*;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Print some internal statistics")
 }
 
-pub fn main(_: &ArgMatches) -> Result<(), super::Error> {
+pub fn main(_: &ArgMatches) -> Result<()> {
 	let stdout = ::std::io::stdout();
 	let mut handle = stdout.lock();
 	print(&mut handle)?;
 	Ok(())
 }
 
-fn print(f: &mut Write) -> Result<(), Error> {
+fn print(f: &mut Write) -> Result<()> {
 	writeln!(f, "General Purpose AST stats:")?;
 	::gp::ast::util::print_stats(f, "  ")?;
 	writeln!(f, "")?;
