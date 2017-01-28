@@ -4,6 +4,7 @@ use clap::{App, AppSettings, SubCommand};
 
 extern crate libdsat;
 use libdsat::{driver, VERSION};
+use libdsat::driver::errors::*;
 
 const NAME: &'static str = "dsat";
 
@@ -19,12 +20,17 @@ fn gen_cli() -> App<'static, 'static> {
 		.subcommand(driver::completion::setup_command(SubCommand::with_name("completion")))
 }
 
-fn main() {
+fn run() -> Result<()> {
 	match gen_cli().get_matches().subcommand() {
-			("completion", Some(matches)) => libdsat::driver::completion::run_command(matches, gen_cli(), NAME),
-			("dimacs", Some(matches)) => libdsat::driver::dimacs::main(matches),
-			("stats", Some(matches)) => libdsat::driver::stats::main(matches),
-			_ => unreachable!(),
-		}
-		.unwrap_or_else(|ref err| err.terminate());
+		("completion", Some(matches)) => libdsat::driver::completion::run_command(gen_cli(), matches, NAME),
+		("dimacs", Some(matches)) => libdsat::driver::dimacs::main(matches),
+		("stats", Some(matches)) => libdsat::driver::stats::main(matches),
+		_ => unreachable!(),
+	}
+}
+
+fn main() {
+	if let Err(ref err) = run() {
+		err.terminate();
+	}
 }
