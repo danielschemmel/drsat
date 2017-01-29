@@ -1,4 +1,3 @@
-use std::collections::VecDeque;
 use std::fmt;
 use std::io::{Error, Write};
 
@@ -10,28 +9,28 @@ pub struct Problem {
 	clauses: Vec<Clause>,
 	applications: Vec<usize>,
 	alpha: f64,
+	irreducible: usize,
 	num_conflicts: usize,
 	last_conflict: Vec<usize>,
 	plays: Vec<usize>,
 	active_variables: usize,
 }
 
-enum PropagationResult {
-	OK,
-	UNSAT(usize),
-}
-
 impl Problem {
 	pub fn new(names: Vec<String>, clauses: Vec<Vec<Literal>>) -> Problem {
 		let varcount = names.len();
+		let irreducible = clauses.len();
+		let mut last_conflict = Vec::new();
+		last_conflict.resize(varcount, 0);
 		Problem {
 			variables: names.into_iter().map(Variable::new).collect(),
 			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
 			applications: Vec::with_capacity(varcount),
 			alpha: 0.4,
+			irreducible: irreducible,
 			num_conflicts: 0,
-			last_conflict: Vec::new(),
-			plays: Vec::new(),
+			last_conflict: last_conflict,
+			plays: Vec::with_capacity(varcount),
 			active_variables: varcount,
 		}
 	}
@@ -54,26 +53,25 @@ impl Problem {
 				self.num_conflicts += 1;
 				dl = self.learn(conflict, dl);
 				self.backjump(dl);
-				if self.clauses[self.clauses.len() - 1].len() == 1 {
+				if self.clauses.last().unwrap().len() == 1 {
 					assert!(dl == 0);
-					/*let lit = clauses.back().get_unit();
-					clauses.pop_back();
-					assert(!variables[lit.id()].has_value());
-					variables[lit.id()].set(!lit.negated(), 0, ::std::numeric_limits<::std::size_t>::max());
-					applications.emplace_back(lit.id());
-					conflict = propagate(dl);
-					if(conflict != ::std::numeric_limits<::std::size_t>::max()) return false;
-					active_variables -= applications.size();
-					applications.clear();
-					*/
+					let lit = self.clauses.last().unwrap().get_unit();
+					self.clauses.pop();
+					assert!(!self.variables[lit.id()].has_value());
+					self.variables[lit.id()].set(!lit.negated(), 0, ::std::usize::MAX);
+					self.applications.push(lit.id());
+					conflict = self.propagate(dl);
+					if conflict != ::std::usize::MAX {
+						return false;
+					}
+					self.active_variables -= self.applications.len();
+					self.applications.clear();
 				} else {
-					/*
-					clauses.back().notify_watched(clauses.size() - 1, variables);
-					auto lit = clauses.back().get_unit(); // it ain't no actual unit clause, but a newly learned clause will have the assertive element first
-					variables[lit.id()].set(!lit.negated(), dl, clauses.size() - 1);
-					applications.emplace_back(lit.id());
-					conflict = propagate(dl);
-					*/
+					self.clauses.last().unwrap().notify_watched(self.clauses.len() - 1, &mut self.variables);
+					let lit = self.clauses.last().unwrap().get_unit(); // it ain't no actual unit clause, but a newly learned clause will have the assertive element first
+					self.variables[lit.id()].set(!lit.negated(), dl, self.clauses.len() - 1);
+					self.applications.push(lit.id());
+					conflict = self.propagate(dl);
 				}
 			} else {
 				if self.active_variables == self.applications.len() {
@@ -83,39 +81,187 @@ impl Problem {
 					gc_next += 500;
 					gc_pos = 0;
 					dl = 0;
-					//delete_clauses();
+					self.delete_clauses();
 				}
 
 				let choice = self.choose();
 				self.plays.push(choice);
 				dl += 1;
-				//self.variables[choice].phase();
-				//self.variables[choice].depth = dl;
-				//self.variables[choice].ante = ::std::numeric_limits<::std::size_t>::max();
+				self.variables[choice].enable(dl);
 				self.applications.push(choice);
 				conflict = self.propagate(dl);
 			}
 		}
 	}
 
-	fn learn(&self, conflict: usize, dl: usize) -> usize {
-		unimplemented!();
+	fn learn(&mut self, mut cid: usize, depth: usize) -> usize {
+		assert!(depth > 0);
+		for lit in self.clauses[cid].iter() {
+			self.last_conflict[lit.id()] = self.num_conflicts;
+		}
+		let mut marks = Vec::<u8>::new();
+		marks.resize(self.variables.len(), 0);
+		let mut lits = Vec::<Literal>::new();
+		let mut queue = Vec::<usize>::with_capacity(self.clauses[cid].len());
+		let mut implicated = ::std::usize::MAX;
+		loop {
+			for lit in self.clauses[cid].iter() {
+				let id = lit.id();
+				assert!(self.variables[id].has_value());
+				assert!(self.variables[id].get_depth() <= depth);
+				if marks[id] == 0 {
+					marks[id] = 1;
+					if self.variables[id].get_depth() == 0 {
+					} else if self.variables[id].get_depth() == depth {
+						if self.variables[id].get_ante() == ::std::usize::MAX {
+							if implicated != ::std::usize::MAX {
+								queue.push(self.variables[lits[implicated].id()].get_ante());
+								lits.swap_remove(implicated);
+							}
+							implicated = lits.len();
+							lits.push(Literal::new(id, lit.negated()));
+						} else if implicated != ::std::usize::MAX {
+							queue.push(self.variables[id].get_ante());
+						} else {
+							implicated = lits.len();
+							lits.push(Literal::new(id, lit.negated()));
+						}
+					} else {
+						lits.push(Literal::new(id, lit.negated()));
+					}
+				}
+			}
+			if queue.is_empty() {
+				break;
+			}
+			cid = *queue.last().unwrap();
+			queue.pop();
+		}
+		assert!(implicated != ::std::usize::MAX);
+		self.minimize(&mut lits, marks, depth);
+		lits.sort_by(|ref lhs, ref rhs| self.variables[rhs.id()].get_depth().cmp(&self.variables[lhs.id()].get_depth()));
+		let backtrack = if lits.len() > 1 { self.variables[lits[1].id()].get_depth() } else { 0 };
+		self.clauses.push(Clause::from_learned(lits, &self.variables));
+		backtrack
 	}
 
-	fn backjump(&self, target: usize) {
-		unimplemented!();
+	pub fn minimize(&self, lits: &mut Vec<Literal>, marks: Vec<u8>, depth: usize) {
+		let mut i: usize = 0;
+		while i < lits.len() {
+			let ref var = self.variables[lits[i].id()];
+			if var.get_ante() != ::std::usize::MAX && var.get_depth() != depth {
+				let mut eliminate = true;
+				for lit in self.clauses[var.get_ante()].iter() {
+					if marks[lit.id()] == 0 {
+						eliminate = false;
+						break;
+					}
+				}
+				if eliminate {
+					lits.swap_remove(i);
+				} else {
+					i += 1;
+				}
+			} else {
+				i += 1;
+			}
+		}
 	}
 
-	fn update_q(&self, conflict: usize) {
-		unimplemented!();
+	fn backjump(&mut self, target: usize) {
+		loop {
+			if self.applications.is_empty() {
+				break;
+			}
+			let ref mut var = self.variables[*self.applications.last().unwrap()];
+			if target == var.get_depth() {
+				break;
+			}
+			var.unset();
+			self.applications.pop();
+		}
+	}
+
+	fn update_q(&mut self, conflict: usize) {
+		let multiplier = if conflict != ::std::usize::MAX { self.alpha } else { 0.9 * self.alpha };
+		let nalpha = 1.0 - self.alpha;
+		for id in &self.plays {
+			let old_part = nalpha * self.variables[*id].get_q();
+			let new_part = multiplier / ((self.num_conflicts - self.last_conflict[*id] + 1) as f64);
+			self.variables[*id].set_q(old_part + new_part);
+		}
+		self.plays.clear();
 	}
 
 	fn choose(&self) -> usize {
-		unimplemented!();
+		let mut choice: usize = 0;
+		let mut q_max = -1f64;
+		for i in 0..self.variables.len() {
+			if !self.variables[i].has_value() && self.variables[i].get_q() > q_max {
+				q_max = self.variables[i].get_q();
+				choice = i;
+			}
+		}
+		choice
 	}
 
-	fn propagate(&self, dl: usize) -> usize {
-		unimplemented!();
+	fn propagate(&mut self, depth: usize) -> usize {
+		assert!(!self.applications.is_empty());
+		let mut ai = self.applications.len() - 1;
+		while {
+			let id = self.applications[ai];
+			assert!(self.variables[id].has_value());
+			let mut ci: usize = 0;
+			while {
+				let val = self.variables[id].get_value();
+				ci < self.variables[id].get_clauses(val).len()
+			 } {
+				let val = self.variables[id].get_value();
+				let cid = self.variables[id].get_clauses(val)[ci];
+				match self.clauses[cid].apply(cid, &mut self.variables) {
+					super::clause::Apply::Continue => { },
+					super::clause::Apply::Unsat => return cid,
+					super::clause::Apply::Unit => {
+						let lit = self.clauses[cid].get_unit();
+						assert!(!self.variables[lit.id()].has_value());
+						self.variables[lit.id()].set(!lit.negated(), depth, cid);
+						self.applications.push(lit.id());
+						self.plays.push(lit.id());
+						self.clauses[cid].update_glue(&mut self.variables);
+					}
+				}
+				let val = self.variables[id].get_value();
+				if ci >= self.variables[id].get_clauses(val).len() {
+					break;
+				}
+				if self.clauses[cid].is_watched(id) {
+					ci += 1;
+				}
+				ci += 1;
+			}
+			ai += 1;
+			ai < self.applications.len()
+		} { }
+		::std::usize::MAX
+	}
+
+	fn delete_clauses(&mut self) {
+		for id in &self.applications {
+			self.variables[*id].unset();
+		}
+		self.applications.clear();
+		for i in 0..self.variables.len() { // FIXME
+			self.variables[i].clear_watched();
+		}
+		self.clauses[self.irreducible..].sort_by_key(|ref lit| lit.get_glue());
+		while self.clauses[self.irreducible..].len() > 0 && self.clauses[self.irreducible].get_glue() == 2 {
+			self.irreducible += 1; // this is different from the c++ version already
+		}
+		let truncate = self.clauses.len() - self.clauses[self.irreducible..].len() / 2;
+		self.clauses.truncate(truncate);
+		for cid in 0..self.clauses.len() {
+			self.clauses[cid].notify_watched(cid, &mut self.variables);
+		}
 	}
 }
 

@@ -36,7 +36,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	}
 
 	sw.start();
-	let ast = ::parser::dimacs::parse(&mut reader).chain_err(|| ErrorKind::Parse(path.into()))?;
+	let mut ast = ::parser::dimacs::parse(&mut reader).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Parsing file: {}", sw);
@@ -44,6 +44,14 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	if matches.is_present("dump-ast") {
 		println!("{:?}", ast);
 	}
+
+	sw.start();
+	let result = ast.solve();
+	sw.stop();
+	if time {
+		println!("[T] Solving query: {}", sw);
+	}
+	println!("Result: {:?}", result);
 
 	Ok(())
 }
