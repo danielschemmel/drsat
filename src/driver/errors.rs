@@ -5,16 +5,19 @@ error_chain! {
 	foreign_links {
 		Io(::std::io::Error);
 	}
-	links {
-		Parse(::parser::errors::Error, ::parser::errors::ErrorKind);
+	errors {
+		Parse(path: String) {
+			description("parsing error")
+			display("Error parsing {}", path)
+		}
 	}
 }
 
 impl Error {
 	pub fn code(&self) -> i32 {
 		match self.kind() {
-			&ErrorKind::Io(_) => 1,
-			&ErrorKind::Parse(_) => 2,
+			&ErrorKind::Parse(_) => 1,
+			&ErrorKind::Io(_) => 100,
 			&ErrorKind::Msg(_) => 127,
 		}
 	}

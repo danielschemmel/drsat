@@ -29,14 +29,14 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	let mut sw = ::util::Stopwatch::new();
 
 	sw.start();
-	let mut reader = load(path)?;
+	let mut reader = load(path).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Opening file: {}", sw);
 	}
 
 	sw.start();
-	let ast = parse(&mut reader)?;
+	let ast = ::parser::dimacs::parse(&mut reader).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Parsing file: {}", sw);
@@ -55,8 +55,4 @@ fn load(path: &str) -> Result<Box<BufRead>> {
 	} else {
 		Ok(Box::new(::std::io::BufReader::new(file)))
 	}
-}
-
-fn parse(reader: &mut BufRead) -> Result<::cnf::Problem> {
-	Ok(::parser::dimacs::parse(reader)?)
 }
