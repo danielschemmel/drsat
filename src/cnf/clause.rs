@@ -10,7 +10,7 @@ pub struct Clause {
 pub enum Apply {
 	Continue,
 	Unsat,
-	Unit,
+	Unit(Literal),
 }
 
 impl Clause {
@@ -26,7 +26,7 @@ impl Clause {
 		let mut glue: usize = 1;
 		let mut d = variables[literals[0].id()].get_depth();
 		let mut lit: usize = 1;
-		while lit < variables.len() {
+		while lit < literals.len() {
 			let curd = variables[literals[lit].id()].get_depth();
 			if curd != d {
 				d = curd;
@@ -88,6 +88,31 @@ impl Clause {
 		self.literals[0]
 	}
 
+	/// The idea of this function is to distribute the (initial) watch list effort
+	/// fairly over all variables
+	pub fn initialize_watched(&mut self, cid: usize, variables: &mut Vec<Variable>) {
+		let mut a: usize = 0;
+		let mut sa = ::std::usize::MAX;
+		let mut b: usize = 0;
+		let mut sb = ::std::usize::MAX;
+		for i in 0..self.literals.len() {
+			let lit = self.literals[i];
+			let len = variables[lit.id()].get_clauses(lit.negated()).len();
+			if len < sa {
+				b = a;
+				sb = sa;
+				a = i;
+				sa = len;
+			} else if len < sb {
+				b = i;
+				sb = len;
+			}
+		}
+		self.literals.swap(0, a);
+		self.literals.swap(1, b);
+		self.notify_watched(cid, variables);
+	}
+
 	pub fn notify_watched(&self, cid: usize, variables: &mut Vec<Variable>) {
 		variables[self.literals[0].id()].watch(cid, self.literals[0].negated());
 		variables[self.literals[1].id()].watch(cid, self.literals[1].negated());
@@ -104,6 +129,7 @@ impl Clause {
 		if variables[self.literals[1].id()].has_value() && self.literals[1].negated() != variables[self.literals[1].id()].get_value() {
 			return Apply::Continue;
 		}
+
 		for i in 2..self.literals.len() {
 			if !variables[self.literals[i].id()].has_value() {
 				if variables[self.literals[0].id()].has_value() {
@@ -127,15 +153,16 @@ impl Clause {
 		}
 		if variables[self.literals[0].id()].has_value() {
 			if variables[self.literals[1].id()].has_value() {
-				return Apply::Unsat;
+				Apply::Unsat
+			} else {
+				Apply::Unit(self.literals[1])
 			}
-			self.literals.swap(0, 1);
-			return Apply::Unit;
 		} else {
 			if variables[self.literals[1].id()].has_value() {
-				return Apply::Unit;
+				Apply::Unit(self.literals[0])
+			} else {
+				Apply::Continue
 			}
-			return Apply::Continue;
 		}
 	}
 

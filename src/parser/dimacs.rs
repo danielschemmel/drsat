@@ -70,7 +70,8 @@ fn skip_comments(reader: &mut BufRead) -> Result<()> {
 fn parse_usize(reader: &mut BufRead) -> Result<usize> {
 	let mut result: usize = 0;
 	let mut nothing = true;
-	loop {
+	let mut done = false;
+	while !done {
 		let read = {
 			let buf = reader.fill_buf()?;
 			if buf.len() == 0 {
@@ -94,13 +95,15 @@ fn parse_usize(reader: &mut BufRead) -> Result<usize> {
 				} else if nothing {
 					bail!(ErrorKind::ExpectedInt);
 				} else {
-					return Ok(result);
+					done = true;
+					break;
 				}
 			}
 			i
 		};
 		reader.consume(read);
 	}
+	Ok(result)
 }
 
 fn parse_header(reader: &mut BufRead) -> Result<(usize, usize)> {
@@ -176,7 +179,7 @@ fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder) -> Result<()
 		Ok(())
 	} else {
 		// this does not really have to be an error
-		// an empty clause would by most be considered trivially UNSAT
+		// an empty clause would usually be considered trivially UNSAT
 		Err(ErrorKind::EmptyClause.into())
 	}
 }
@@ -191,7 +194,7 @@ pub fn parse(reader: &mut BufRead) -> Result<Problem> {
 		parse_clause(reader, &mut builder)?;
 	}
 	// anything else in the file, we explicitly ignore
-	// considering the many different ways dimcs files end, this
+	// considering the many different ways dimacs files end, this
 	// is explicitly done to increase compatibility
 	Ok(builder.as_problem())
 }

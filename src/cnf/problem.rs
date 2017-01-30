@@ -22,7 +22,7 @@ impl Problem {
 		let irreducible = clauses.len();
 		let mut last_conflict = Vec::new();
 		last_conflict.resize(varcount, 0);
-		Problem {
+		let mut problem = Problem {
 			variables: names.into_iter().map(Variable::new).collect(),
 			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
 			applications: Vec::with_capacity(varcount),
@@ -32,13 +32,21 @@ impl Problem {
 			last_conflict: last_conflict,
 			plays: Vec::with_capacity(varcount),
 			active_variables: varcount,
+		};
+		problem.initialize();
+		problem
+	}
+
+	fn initialize(&mut self) {
+		for i in 0..self.clauses.len() {
+			self.clauses[i].initialize_watched(i, &mut self.variables);
 		}
 	}
 
 	pub fn solve(&mut self) -> bool {
 		let mut dl: usize = 0;
-		let mut gc_next = 10000u32;
-		let mut gc_pos = 0u32;
+		let mut gc_next: u32 = 10000;
+		let mut gc_pos: u32 = 0;
 		let mut conflict = ::std::usize::MAX;
 		loop {
 			self.update_q(conflict);
@@ -212,17 +220,13 @@ impl Problem {
 			let id = self.applications[ai];
 			assert!(self.variables[id].has_value());
 			let mut ci: usize = 0;
-			while {
-				let val = self.variables[id].get_value();
-				ci < self.variables[id].get_clauses(val).len()
-			 } {
-				let val = self.variables[id].get_value();
+			let val = self.variables[id].get_value();
+			while ci < self.variables[id].get_clauses(val).len() {
 				let cid = self.variables[id].get_clauses(val)[ci];
 				match self.clauses[cid].apply(cid, &mut self.variables) {
 					super::clause::Apply::Continue => { },
 					super::clause::Apply::Unsat => return cid,
-					super::clause::Apply::Unit => {
-						let lit = self.clauses[cid].get_unit();
+					super::clause::Apply::Unit(lit) => {
 						assert!(!self.variables[lit.id()].has_value());
 						self.variables[lit.id()].set(!lit.negated(), depth, cid);
 						self.applications.push(lit.id());
@@ -230,14 +234,12 @@ impl Problem {
 						self.clauses[cid].update_glue(&mut self.variables);
 					}
 				}
-				let val = self.variables[id].get_value();
 				if ci >= self.variables[id].get_clauses(val).len() {
 					break;
 				}
-				if self.clauses[cid].is_watched(id) {
+				if cid == self.variables[id].get_clauses(val)[ci] {
 					ci += 1;
 				}
-				ci += 1;
 			}
 			ai += 1;
 			ai < self.applications.len()
@@ -261,6 +263,22 @@ impl Problem {
 		self.clauses.truncate(truncate);
 		for cid in 0..self.clauses.len() {
 			self.clauses[cid].notify_watched(cid, &mut self.variables);
+		}
+	}
+
+	pub fn print_model(&self, indent: &str) {
+		for var in &self.variables {
+			assert!(var.has_value());
+			println!("{}{}: {}", indent, var.name(), var.get_value());
+		}
+	}
+
+	pub fn print_clauses(&self) {
+		for clause in &self.clauses {
+			for lit in clause.iter() {
+				print!("{}{} ", if lit.negated() { "-" } else { " " }, self.variables[lit.id()].name());
+			}
+			println!("");
 		}
 	}
 }

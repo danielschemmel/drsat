@@ -33,6 +33,7 @@ impl Variable {
 	}
 
 	pub fn get_value(&self) -> bool {
+		assert!(self.active);
 		self.value
 	}
 
@@ -73,6 +74,10 @@ impl Variable {
 
 	pub fn watch(&mut self, cid: usize, negated: bool) {
 		self.get_clauses(negated).push(cid);
+	}
+
+	pub fn watches(&mut self, cid: usize, negated: bool) -> bool {
+		self.get_clauses(negated).iter().position(|a| *a == cid).is_some()
 	}
 
 	pub fn unwatch(&mut self, cid: usize, negated: bool) {

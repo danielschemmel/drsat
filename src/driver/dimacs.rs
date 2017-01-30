@@ -36,22 +36,27 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	}
 
 	sw.start();
-	let mut ast = ::parser::dimacs::parse(&mut reader).chain_err(|| ErrorKind::Parse(path.into()))?;
+	let mut problem = ::parser::dimacs::parse(&mut reader).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Parsing file: {}", sw);
 	}
 	if matches.is_present("dump-ast") {
-		println!("{:?}", ast);
+		//println!("{:?}", problem);
+		problem.print_clauses();
 	}
 
 	sw.start();
-	let result = ast.solve();
+	let result = problem.solve();
 	sw.stop();
 	if time {
 		println!("[T] Solving query: {}", sw);
 	}
 	println!("Result: {:?}", result);
+	if result {
+		println!("Model:");
+		problem.print_model("  ");
+	}
 
 	Ok(())
 }

@@ -8,6 +8,10 @@ build = "build.rs"
 [lib]
 name = "libdsat"
 
+[profile.release]
+opt-level = 3
+lto = true # enabling this significantly increases compile time, but also seems to yield a > 10% speedup
+
 [build-dependencies]
 clap  = { version = "2.20" }
 error-chain = { version = "*" }
