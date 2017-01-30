@@ -51,6 +51,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	sw.stop();
 	if time {
 		println!("[T] Solving query: {}", sw);
+		problem.print_conflict_histo();
 	}
 	println!("Result: {:?}", result);
 	if result {

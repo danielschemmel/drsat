@@ -1,19 +1,23 @@
 use std::fmt;
 use std::io::{Error, Write};
 
+use util::Histo;
+
 use super::{Clause, Literal, Variable};
 
 #[derive(Debug)]
 pub struct Problem {
+	alpha: f64,
+	gc_count: u64,
 	variables: Vec<Variable>,
 	clauses: Vec<Clause>,
 	applications: Vec<usize>,
-	alpha: f64,
 	irreducible: usize,
 	num_conflicts: usize,
 	last_conflict: Vec<usize>,
 	plays: Vec<usize>,
 	active_variables: usize,
+	conflict_lens: Histo,
 }
 
 impl Problem {
@@ -23,15 +27,17 @@ impl Problem {
 		let mut last_conflict = Vec::new();
 		last_conflict.resize(varcount, 0);
 		let mut problem = Problem {
+			alpha: 0.4,
+			gc_count: 0,
 			variables: names.into_iter().map(Variable::new).collect(),
 			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
 			applications: Vec::with_capacity(varcount),
-			alpha: 0.4,
 			irreducible: irreducible,
 			num_conflicts: 0,
 			last_conflict: last_conflict,
 			plays: Vec::with_capacity(varcount),
 			active_variables: varcount,
+			conflict_lens: Histo::new(),
 		};
 		problem.initialize();
 		problem
@@ -45,7 +51,7 @@ impl Problem {
 
 	pub fn solve(&mut self) -> bool {
 		let mut dl: usize = 0;
-		let mut gc_next: u32 = 10000;
+		let mut gc_next: u32 = 5000;
 		let mut gc_pos: u32 = 0;
 		let mut conflict = ::std::usize::MAX;
 		loop {
@@ -61,6 +67,7 @@ impl Problem {
 				self.num_conflicts += 1;
 				dl = self.learn(conflict, dl);
 				self.backjump(dl);
+				self.conflict_lens.add(self.clauses.last().unwrap().len() - 1);
 				if self.clauses.last().unwrap().len() == 1 {
 					assert!(dl == 0);
 					let lit = self.clauses.last().unwrap().get_unit();
@@ -88,7 +95,7 @@ impl Problem {
 				if gc_pos >= gc_next {
 					gc_next += 500;
 					gc_pos = 0;
-					dl = 0;
+					dl = 0; // FIXME: restarts and garbage collection should be independent!
 					self.delete_clauses();
 				}
 
@@ -107,18 +114,18 @@ impl Problem {
 		for lit in self.clauses[cid].iter() {
 			self.last_conflict[lit.id()] = self.num_conflicts;
 		}
-		let mut marks = Vec::<u8>::new();
-		marks.resize(self.variables.len(), 0);
+		let mut marks = Vec::<bool>::new();
+		marks.resize(self.variables.len(), false);
 		let mut lits = Vec::<Literal>::new();
 		let mut queue = Vec::<usize>::with_capacity(self.clauses[cid].len());
 		let mut implicated = ::std::usize::MAX;
 		loop {
 			for lit in self.clauses[cid].iter() {
-				let id = lit.id();
+				let (id, negated) = lit.disassemble();
 				assert!(self.variables[id].has_value());
 				assert!(self.variables[id].get_depth() <= depth);
-				if marks[id] == 0 {
-					marks[id] = 1;
+				if !marks[id] {
+					marks[id] = true;
 					if self.variables[id].get_depth() == 0 {
 					} else if self.variables[id].get_depth() == depth {
 						if self.variables[id].get_ante() == ::std::usize::MAX {
@@ -127,23 +134,22 @@ impl Problem {
 								lits.swap_remove(implicated);
 							}
 							implicated = lits.len();
-							lits.push(Literal::new(id, lit.negated()));
+							lits.push(Literal::new(id, negated));
 						} else if implicated != ::std::usize::MAX {
 							queue.push(self.variables[id].get_ante());
 						} else {
 							implicated = lits.len();
-							lits.push(Literal::new(id, lit.negated()));
+							lits.push(Literal::new(id, negated));
 						}
 					} else {
-						lits.push(Literal::new(id, lit.negated()));
+						lits.push(Literal::new(id, negated));
 					}
 				}
 			}
-			if queue.is_empty() {
-				break;
+			match queue.pop() {
+				None => break,
+				Some(t) => cid = t,
 			}
-			cid = *queue.last().unwrap();
-			queue.pop();
 		}
 		assert!(implicated != ::std::usize::MAX);
 		self.minimize(&mut lits, marks, depth);
@@ -153,19 +159,12 @@ impl Problem {
 		backtrack
 	}
 
-	pub fn minimize(&self, lits: &mut Vec<Literal>, marks: Vec<u8>, depth: usize) {
+	pub fn minimize(&self, lits: &mut Vec<Literal>, marks: Vec<bool>, depth: usize) {
 		let mut i: usize = 0;
 		while i < lits.len() {
 			let ref var = self.variables[lits[i].id()];
 			if var.get_ante() != ::std::usize::MAX && var.get_depth() != depth {
-				let mut eliminate = true;
-				for lit in self.clauses[var.get_ante()].iter() {
-					if marks[lit.id()] == 0 {
-						eliminate = false;
-						break;
-					}
-				}
-				if eliminate {
+				if self.clauses[var.get_ante()].iter().all(|lit| marks[lit.id()]) {
 					lits.swap_remove(i);
 				} else {
 					i += 1;
@@ -193,20 +192,19 @@ impl Problem {
 	fn update_q(&mut self, conflict: usize) {
 		let multiplier = if conflict != ::std::usize::MAX { self.alpha } else { 0.9 * self.alpha };
 		let nalpha = 1.0 - self.alpha;
-		for id in &self.plays {
-			let old_part = nalpha * self.variables[*id].get_q();
-			let new_part = multiplier / ((self.num_conflicts - self.last_conflict[*id] + 1) as f64);
-			self.variables[*id].set_q(old_part + new_part);
+		for id in self.plays.drain(..) {
+			let old_part = nalpha * self.variables[id].get_q();
+			let new_part = multiplier / ((self.num_conflicts - self.last_conflict[id] + 1) as f64);
+			self.variables[id].set_q(old_part + new_part);
 		}
-		self.plays.clear();
 	}
 
 	fn choose(&self) -> usize {
 		let mut choice: usize = 0;
 		let mut q_max = -1f64;
-		for i in 0..self.variables.len() {
-			if !self.variables[i].has_value() && self.variables[i].get_q() > q_max {
-				q_max = self.variables[i].get_q();
+		for (i, ref var) in self.variables.iter().enumerate() {
+			if !var.has_value() && var.get_q() > q_max {
+				q_max = var.get_q();
 				choice = i;
 			}
 		}
@@ -248,22 +246,23 @@ impl Problem {
 	}
 
 	fn delete_clauses(&mut self) {
-		for id in &self.applications {
-			self.variables[*id].unset();
+		self.gc_count += 1;
+		//println!("[GC #{}]", self.gc_count);
+		//let old = self.clauses.len();
+		for id in self.applications.drain(..) {
+			self.variables[id].unset();
 		}
-		self.applications.clear();
-		for i in 0..self.variables.len() { // FIXME
-			self.variables[i].clear_watched();
+		for var in self.variables.iter_mut() {
+			var.clear_watched();
 		}
-		self.clauses[self.irreducible..].sort_by_key(|ref lit| lit.get_glue());
-		while self.clauses[self.irreducible..].len() > 0 && self.clauses[self.irreducible].get_glue() == 2 {
-			self.irreducible += 1; // this is different from the c++ version already
-		}
-		let truncate = self.clauses.len() - self.clauses[self.irreducible..].len() / 2;
+		self.clauses[self.irreducible..].sort_by_key(|ref clause| clause.get_glue());
+		self.irreducible += self.clauses[self.irreducible..].iter().take_while(|ref clause| clause.get_glue() == 2).count();
+		let truncate = self.clauses.len() - (self.clauses.len() - self.irreducible) / 2;
 		self.clauses.truncate(truncate);
-		for cid in 0..self.clauses.len() {
-			self.clauses[cid].notify_watched(cid, &mut self.variables);
+		for (cid, ref clause) in self.clauses.iter_mut().enumerate() {
+			clause.notify_watched(cid, &mut self.variables);
 		}
+		//println!("[GC {} -> {}]", old, self.clauses.len());
 	}
 
 	pub fn print_model(&self, indent: &str) {
@@ -281,6 +280,15 @@ impl Problem {
 			println!("");
 		}
 	}
+
+	pub fn print_conflict_histo(&self) {
+		println!("{} conflicts: {}", self.num_conflicts, self.conflict_lens);
+		let mut x = 0u64;
+		for i in 0..self.conflict_lens.bins.len() {
+			x += self.conflict_lens.bins[i] * ((i + 1) as u64);
+		}
+		println!("  of total complexity {}", x);
+	}
 }
 
 impl fmt::Display for Problem {
@@ -296,14 +304,24 @@ impl fmt::Display for Problem {
 
 pub fn print_stats(f: &mut Write, indent: &str) -> Result<(), Error> {
 	writeln!(f,
-	         "{}{:8} {:2}",
+	         "{}{:8} {:3}",
 	         indent,
 	         "Literal",
 	         ::util::Typeinfo::<Literal>::new())?;
 	writeln!(f,
-	         "{}{:8} {:2}",
+	         "{}{:8} {:3}",
 	         indent,
 	         "Clause",
 	         ::util::Typeinfo::<Clause>::new())?;
+	writeln!(f,
+	         "{}{:8} {:3}",
+	         indent,
+	         "Variable",
+	         ::util::Typeinfo::<Variable>::new())?;
+	writeln!(f,
+	         "{}{:8} {:3}",
+	         indent,
+	         "Problem",
+	         ::util::Typeinfo::<Problem>::new())?;
 	Ok(())
 }

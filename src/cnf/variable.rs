@@ -4,11 +4,17 @@ pub struct Variable {
 	name: String,
 	neg_clauses: Vec<usize>,
 	pos_clauses: Vec<usize>,
-	depth: usize,
 	ante: usize,
+	depth: usize,
 	value: bool,
-	active: bool,
 }
+
+// Proof that u32 is large enough:
+// 1 bit is lost due to literal compression, meaning that 2 billion variables are possible
+// Variables have a fixed cost of >100 byte, so just storing 2 billion variables will take >200 GB.
+// Additionally, any useful variable needs to be in at least 2 clauses, costing another 16GB (32GB when using u64)
+// Too bad, I am not convinced.
+pub type VariableCount = usize;
 
 impl Variable {
 	pub fn new(name: String) -> Variable {
@@ -16,10 +22,9 @@ impl Variable {
 			name: name,
 			neg_clauses: Vec::new(),
 			pos_clauses: Vec::new(),
-			depth: ::std::usize::MAX,
 			ante: ::std::usize::MAX,
+			depth: ::std::usize::MAX,
 			value: false,
-			active: false,
 			q: 0.0,
 		}
 	}
@@ -29,31 +34,28 @@ impl Variable {
 	}
 
 	pub fn has_value(&self) -> bool {
-		self.active
-	}
+		self.depth != ::std::usize::MAX
+		}
 
 	pub fn get_value(&self) -> bool {
-		assert!(self.active);
+		assert!(self.has_value());
 		self.value
 	}
 
 	pub fn set(&mut self, value: bool, depth: usize, ante: usize) {
-		self.active = true;
 		self.value = value;
 		self.depth = depth;
 		self.ante = ante;
 	}
 
 	pub fn unset(&mut self) {
-		self.active = false;
 		self.ante = ::std::usize::MAX;
 		self.depth = ::std::usize::MAX;
 	}
 
 	pub fn enable(&mut self, depth: usize) {
-		self.active = true;
+		assert!(self.ante == ::std::usize::MAX);
 		self.depth = depth;
-		self.ante = ::std::usize::MAX;
 	}
 
 	pub fn get_depth(&self) -> usize {
@@ -84,7 +86,6 @@ impl Variable {
 		let ref mut clauses = self.get_clauses(negated);
 		let mut i: usize = 0;
 		loop {
-			assert!(i < clauses.len());
 			if clauses[i] == cid {
 				clauses.swap_remove(i);
 				return;

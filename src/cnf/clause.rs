@@ -123,43 +123,47 @@ impl Clause {
 	}
 
 	pub fn apply(&mut self, cid: usize, variables: &mut Vec<Variable>) -> Apply {
-		if variables[self.literals[0].id()].has_value() && self.literals[0].negated() != variables[self.literals[0].id()].get_value() {
+		let mut lit0 = self.literals[0];
+		if variables[lit0.id()].has_value() && lit0.negated() != variables[lit0.id()].get_value() {
 			return Apply::Continue;
 		}
-		if variables[self.literals[1].id()].has_value() && self.literals[1].negated() != variables[self.literals[1].id()].get_value() {
+		let lit1 = self.literals[1];
+		if variables[lit1.id()].has_value() && lit1.negated() != variables[lit1.id()].get_value() {
 			return Apply::Continue;
 		}
 
 		for i in 2..self.literals.len() {
-			if !variables[self.literals[i].id()].has_value() {
-				if variables[self.literals[0].id()].has_value() {
-					variables[self.literals[0].id()].unwatch(cid, self.literals[0].negated());
-					variables[self.literals[i].id()].watch(cid, self.literals[i].negated());
+			let lit = self.literals[i];
+			if !variables[lit.id()].has_value() {
+				if variables[lit0.id()].has_value() {
+					variables[lit0.id()].unwatch(cid, lit0.negated());
+					variables[lit.id()].watch(cid, lit.negated());
 					self.literals.swap(0, i);
-					if !variables[self.literals[1].id()].has_value() {
+					if !variables[lit1.id()].has_value() {
 						return Apply::Continue;
 					}
+					lit0 = lit
 				} else {
-					assert!(variables[self.literals[1].id()].has_value());
-					variables[self.literals[1].id()].unwatch(cid, self.literals[1].negated());
-					variables[self.literals[i].id()].watch(cid, self.literals[i].negated());
+					assert!(variables[lit1.id()].has_value());
+					variables[lit1.id()].unwatch(cid, lit1.negated());
+					variables[lit.id()].watch(cid, lit.negated());
 					self.literals.swap(1, i);
 					return Apply::Continue;
 				}
-			} else if self.literals[i].negated() != variables[self.literals[i].id()].get_value() {
+			} else if lit.negated() != variables[lit.id()].get_value() {
 				self.percolate_sat(cid, variables, i);
 				return Apply::Continue;
 			}
 		}
-		if variables[self.literals[0].id()].has_value() {
-			if variables[self.literals[1].id()].has_value() {
+		if variables[lit0.id()].has_value() {
+			if variables[lit1.id()].has_value() {
 				Apply::Unsat
 			} else {
-				Apply::Unit(self.literals[1])
+				Apply::Unit(lit1)
 			}
 		} else {
-			if variables[self.literals[1].id()].has_value() {
-				Apply::Unit(self.literals[0])
+			if variables[lit1.id()].has_value() {
+				Apply::Unit(lit0)
 			} else {
 				Apply::Continue
 			}
@@ -175,18 +179,12 @@ impl Clause {
 				pos = i;
 			}
 		}
-		// FIXME: the following was a comment in the c++ sources as well
-		/* if d == 0 {
-			self.clear_watched();
-			self.glue = ::std::usize::MAX;
-		} else */ {
-			if pos > 1 {
-				variables[self.literals[0].id()].unwatch(cid, self.literals[0].negated());
-				variables[self.literals[pos].id()].watch(cid, self.literals[pos].negated());
-				self.literals.swap(0, pos);
-			} else if pos == 1 {
-				self.literals.swap(0, 1);
-			}
+		if pos > 1 {
+			variables[self.literals[0].id()].unwatch(cid, self.literals[0].negated());
+			variables[self.literals[pos].id()].watch(cid, self.literals[pos].negated());
+			self.literals.swap(0, pos);
+		} else if pos == 1 {
+			self.literals.swap(0, 1);
 		}
 	}
 }
