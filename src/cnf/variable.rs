@@ -35,7 +35,7 @@ impl Variable {
 
 	pub fn has_value(&self) -> bool {
 		self.depth != ::std::usize::MAX
-		}
+	}
 
 	pub fn get_value(&self) -> bool {
 		assert!(self.has_value());

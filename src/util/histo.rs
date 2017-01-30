@@ -7,9 +7,7 @@ pub struct Histo {
 
 impl Histo {
 	pub fn new() -> Histo {
-		Histo {
-			bins: Vec::new(),
-		}
+		Histo { bins: Vec::new() }
 	}
 
 	pub fn add(&mut self, bin: usize) {

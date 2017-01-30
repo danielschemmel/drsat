@@ -154,7 +154,11 @@ impl Problem {
 		assert!(implicated != ::std::usize::MAX);
 		self.minimize(&mut lits, marks, depth);
 		lits.sort_by(|ref lhs, ref rhs| self.variables[rhs.id()].get_depth().cmp(&self.variables[lhs.id()].get_depth()));
-		let backtrack = if lits.len() > 1 { self.variables[lits[1].id()].get_depth() } else { 0 };
+		let backtrack = if lits.len() > 1 {
+			self.variables[lits[1].id()].get_depth()
+		} else {
+			0
+		};
 		self.clauses.push(Clause::from_learned(lits, &self.variables));
 		backtrack
 	}
@@ -190,7 +194,11 @@ impl Problem {
 	}
 
 	fn update_q(&mut self, conflict: usize) {
-		let multiplier = if conflict != ::std::usize::MAX { self.alpha } else { 0.9 * self.alpha };
+		let multiplier = if conflict != ::std::usize::MAX {
+			self.alpha
+		} else {
+			0.9 * self.alpha
+		};
 		let nalpha = 1.0 - self.alpha;
 		for id in self.plays.drain(..) {
 			let old_part = nalpha * self.variables[id].get_q();
@@ -222,7 +230,7 @@ impl Problem {
 			while ci < self.variables[id].get_clauses(val).len() {
 				let cid = self.variables[id].get_clauses(val)[ci];
 				match self.clauses[cid].apply(cid, &mut self.variables) {
-					super::clause::Apply::Continue => { },
+					super::clause::Apply::Continue => {}
 					super::clause::Apply::Unsat => return cid,
 					super::clause::Apply::Unit(lit) => {
 						assert!(!self.variables[lit.id()].has_value());
@@ -241,7 +249,7 @@ impl Problem {
 			}
 			ai += 1;
 			ai < self.applications.len()
-		} { }
+		} {}
 		::std::usize::MAX
 	}
 
@@ -275,7 +283,9 @@ impl Problem {
 	pub fn print_clauses(&self) {
 		for clause in &self.clauses {
 			for lit in clause.iter() {
-				print!("{}{} ", if lit.negated() { "-" } else { " " }, self.variables[lit.id()].name());
+				print!("{}{} ",
+				       if lit.negated() { "-" } else { " " },
+				       self.variables[lit.id()].name());
 			}
 			println!("");
 		}
