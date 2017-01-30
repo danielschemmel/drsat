@@ -188,10 +188,16 @@ pub fn parse(reader: &mut BufRead) -> Result<Problem> {
 	skip_comments(reader)?;
 	let mut builder = ProblemBuilder::new();
 	let (variables, clauses) = parse_header(reader)?;
+	if clauses == 0 {
+		bail!(ErrorKind::EmptyQuery);
+	}
 	builder.reserve_variables(variables);
 	builder.reserve_clauses(clauses);
 	for _ in 0..clauses {
 		parse_clause(reader, &mut builder)?;
+	}
+	if variables != builder.variable_count() {
+		bail!(ErrorKind::VariableCount(variables, builder.variable_count()));
 	}
 	// anything else in the file, we explicitly ignore
 	// considering the many different ways dimacs files end, this

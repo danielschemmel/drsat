@@ -52,6 +52,10 @@ impl ProblemBuilder {
 			Entry::Occupied(occupied_entry) => *occupied_entry.get(),
 		}
 	}
+
+	pub fn variable_count(&self) -> usize {
+		self.names.len()
+	}
 }
 
 pub struct ClauseBuilder<'a> {
