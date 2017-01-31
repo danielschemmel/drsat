@@ -225,10 +225,9 @@ impl Problem {
 		while {
 			let id = self.applications[ai];
 			assert!(self.variables[id].has_value());
-			let mut ci: usize = 0;
 			let val = self.variables[id].get_value();
-			while ci < self.variables[id].get_clauses(val).len() {
-				let cid = self.variables[id].get_clauses(val)[ci];
+			let moo: Vec<usize> = self.variables[id].get_clauses(val).iter().map(|&a| a).collect();
+			for cid in moo {
 				match self.clauses[cid].apply(cid, &mut self.variables) {
 					super::clause::Apply::Continue => {}
 					super::clause::Apply::Unsat => return cid,
@@ -239,12 +238,6 @@ impl Problem {
 						self.plays.push(lit.id());
 						self.clauses[cid].update_glue(&mut self.variables);
 					}
-				}
-				if ci >= self.variables[id].get_clauses(val).len() {
-					break;
-				}
-				if cid == self.variables[id].get_clauses(val)[ci] {
-					ci += 1;
 				}
 			}
 			ai += 1;
