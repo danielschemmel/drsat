@@ -8,13 +8,11 @@ fn skip_ws(reader: &mut BufRead) -> Result<()> {
 	loop {
 		let (skip, len) = {
 			let buf = reader.fill_buf()?;
-
 			if buf.len() == 0 {
 				return Ok(());
 			}
 
-			let skip_count = buf.iter().position(|&b| !(b as char).is_whitespace());
-
+			let skip_count = buf.iter().position(|&b| b != b' ' && b != b'\t' && b != b'\n' && b != b'\r');
 			(skip_count.unwrap_or(buf.len()), buf.len())
 		};
 
@@ -30,16 +28,12 @@ fn skip_past_eol(reader: &mut BufRead) -> Result<()> {
 	loop {
 		let (skip, len) = {
 			let buf = reader.fill_buf()?;
-
 			if buf.len() == 0 {
 				return Ok(());
 			}
 
-			let mut i: usize = 0;
-			while i < buf.len() && (buf[i] != b'\n') {
-				i += 1;
-			}
-			(i, buf.len())
+			let skip_count = buf.iter().position(|&b| b == b'\n');
+			(skip_count.unwrap_or(buf.len()), buf.len())
 		};
 		reader.consume(skip);
 		if skip < len {
@@ -55,9 +49,8 @@ fn skip_comments(reader: &mut BufRead) -> Result<()> {
 			let buf = reader.fill_buf()?;
 			if buf.len() == 0 {
 				return Ok(());
-			} else {
-				buf[0]
 			}
+			buf[0]
 		};
 		if peek == b'c' {
 			skip_past_eol(reader)?;
