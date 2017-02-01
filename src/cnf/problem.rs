@@ -69,10 +69,10 @@ impl Problem {
 				self.backjump(dl);
 				self.conflict_lens.add(self.clauses.last().unwrap().len() - 1);
 				if self.clauses.last().unwrap().len() == 1 {
-					assert!(dl == 0);
+					debug_assert!(dl == 0);
 					let lit = self.clauses.last().unwrap().get_unit();
 					self.clauses.pop();
-					assert!(!self.variables[lit.id()].has_value());
+					debug_assert!(!self.variables[lit.id()].has_value());
 					self.variables[lit.id()].set(!lit.negated(), 0, ::std::usize::MAX);
 					self.applications.push(lit.id());
 					conflict = self.propagate(dl);
@@ -110,7 +110,7 @@ impl Problem {
 	}
 
 	fn learn(&mut self, mut cid: usize, depth: usize) -> usize {
-		assert!(depth > 0);
+		debug_assert!(depth > 0);
 		for lit in self.clauses[cid].iter() {
 			self.last_conflict[lit.id()] = self.num_conflicts;
 		}
@@ -122,8 +122,8 @@ impl Problem {
 		loop {
 			for lit in self.clauses[cid].iter() {
 				let (id, negated) = lit.disassemble();
-				assert!(self.variables[id].has_value());
-				assert!(self.variables[id].get_depth() <= depth);
+				debug_assert!(self.variables[id].has_value());
+				debug_assert!(self.variables[id].get_depth() <= depth);
 				if !marks[id] {
 					marks[id] = true;
 					if self.variables[id].get_depth() == 0 {
@@ -151,7 +151,7 @@ impl Problem {
 				Some(t) => cid = t,
 			}
 		}
-		assert!(implicated != ::std::usize::MAX);
+		debug_assert!(implicated != ::std::usize::MAX);
 		self.minimize(&mut lits, marks, depth);
 		lits.sort_by(|ref lhs, ref rhs| self.variables[rhs.id()].get_depth().cmp(&self.variables[lhs.id()].get_depth()));
 		let backtrack = if lits.len() > 1 {
@@ -220,11 +220,11 @@ impl Problem {
 	}
 
 	fn propagate(&mut self, depth: usize) -> usize {
-		assert!(!self.applications.is_empty());
+		debug_assert!(!self.applications.is_empty());
 		let mut ai = self.applications.len() - 1;
 		while {
 			let id = self.applications[ai];
-			assert!(self.variables[id].has_value());
+			debug_assert!(self.variables[id].has_value());
 			let val = self.variables[id].get_value();
 			let moo: Vec<usize> = self.variables[id].get_clauses(val).iter().map(|&a| a).collect();
 			for cid in moo {
@@ -232,7 +232,7 @@ impl Problem {
 					super::clause::Apply::Continue => {}
 					super::clause::Apply::Unsat => return cid,
 					super::clause::Apply::Unit(lit) => {
-						assert!(!self.variables[lit.id()].has_value());
+						debug_assert!(!self.variables[lit.id()].has_value());
 						self.variables[lit.id()].set(!lit.negated(), depth, cid);
 						self.applications.push(lit.id());
 						self.plays.push(lit.id());
@@ -268,7 +268,7 @@ impl Problem {
 
 	pub fn print_model(&self, indent: &str) {
 		for var in &self.variables {
-			assert!(var.has_value());
+			debug_assert!(var.has_value());
 			println!("{}{}: {}", indent, var.name(), var.get_value());
 		}
 	}

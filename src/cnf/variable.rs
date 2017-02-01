@@ -40,7 +40,7 @@ impl Variable {
 	}
 
 	pub fn get_value(&self) -> bool {
-		assert!(self.has_value());
+		debug_assert!(self.has_value());
 		self.value
 	}
 
@@ -56,7 +56,7 @@ impl Variable {
 	}
 
 	pub fn enable(&mut self, depth: usize) {
-		assert!(self.ante == ::std::usize::MAX);
+		debug_assert!(self.ante == ::std::usize::MAX);
 		self.depth = depth;
 	}
 

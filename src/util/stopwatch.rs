@@ -26,7 +26,7 @@ impl Stopwatch {
 }
 
 fn format_long_seconds(f: &mut fmt::Formatter, mut seconds: i64) -> fmt::Result {
-	assert!(seconds > 1);
+	debug_assert!(seconds > 1);
 	let mut div: i64 = 1000;
 	while div <= seconds {
 		div *= 1000;
@@ -48,7 +48,7 @@ fn format_long_seconds(f: &mut fmt::Formatter, mut seconds: i64) -> fmt::Result 
 
 fn format_duration(f: &mut fmt::Formatter, duration: &Duration) -> fmt::Result {
 	let ms = duration.num_milliseconds();
-	assert!(ms >= 0);
+	debug_assert!(ms >= 0);
 	if let Some(ns) = duration.num_nanoseconds() {
 		if ns >= 999_950_000_000 {
 			let ns = ns + ns % 1_000_000_000;

@@ -144,7 +144,7 @@ impl Clause {
 					}
 					lit0 = lit
 				} else {
-					assert!(variables[lit1.id()].has_value());
+					debug_assert!(variables[lit1.id()].has_value());
 					variables[lit1.id()].unwatch(cid, lit1.negated());
 					variables[lit.id()].watch(cid, lit.negated());
 					self.literals.swap(1, i);
