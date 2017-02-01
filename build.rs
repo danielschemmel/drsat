@@ -1,13 +1,13 @@
-use ::std::env;
-use ::std::fs::{File, create_dir_all};
-use ::std::io::{Write, Read, BufWriter};
-use ::std::path::Path;
+use std::env;
+use std::fs::{File, create_dir_all};
+use std::io::{Write, Read, BufWriter};
+use std::path::Path;
 
 #[macro_use]
 extern crate error_chain;
 
 extern crate git2;
-use ::git2::{Repository, DescribeOptions, DescribeFormatOptions};
+use git2::{Repository, DescribeOptions, DescribeFormatOptions};
 
 mod errors {
 	error_chain! {
