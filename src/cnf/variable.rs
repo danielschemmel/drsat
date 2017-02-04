@@ -44,6 +44,14 @@ impl Variable {
 		self.value
 	}
 
+	pub fn value(&self) -> Option<bool> {
+		if self.depth == ::std::usize::MAX {
+			None
+		} else {
+			Some(self.value)
+		}
+	}
+
 	pub fn set(&mut self, value: bool, depth: usize, ante: usize) {
 		self.value = value;
 		self.depth = depth;

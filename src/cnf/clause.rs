@@ -25,14 +25,12 @@ impl Clause {
 	pub fn from_learned(literals: Vec<Literal>, variables: &[Variable]) -> Clause {
 		let mut glue: usize = 1;
 		let mut d = variables[literals[0].id()].get_depth();
-		let mut lit: usize = 1;
-		while lit < literals.len() {
-			let curd = variables[literals[lit].id()].get_depth();
+		for lit in &literals[1..] {
+			let curd = variables[lit.id()].get_depth();
 			if curd != d {
 				d = curd;
 				glue += 1;
 			}
-			lit += 1;
 		}
 		Clause {
 			literals: literals,
@@ -58,21 +56,20 @@ impl Clause {
 		if self.glue <= 2 {
 			return;
 		}
-		let mut marks = Vec::<u8>::new();
-		marks.resize(variables.len(), 0);
+		let mut marks = Vec::<bool>::new();
+		marks.resize(variables.len(), false);
 		let mut glue: usize = 0;
 		for lit in &self.literals {
 			let depth = variables[lit.id()].get_depth();
-			if marks[depth] == 0 {
+			if !marks[depth] {
 				glue += 1;
-				marks[depth] = 1;
+				marks[depth] = true;
 				if glue >= self.glue {
 					return;
 				}
 			}
-			if glue < self.glue {
-				self.glue = glue;
-			}
+			debug_assert!(glue < self.glue);
+			self.glue = glue;
 		}
 	}
 
@@ -124,35 +121,44 @@ impl Clause {
 
 	pub fn apply(&mut self, cid: usize, variables: &mut Vec<Variable>) -> Apply {
 		let mut lit0 = self.literals[0];
-		if variables[lit0.id()].has_value() && lit0.negated() != variables[lit0.id()].get_value() {
-			return Apply::Continue;
+		if let Some(val) = variables[lit0.id()].value() {
+			if lit0.negated() != val {
+				return Apply::Continue;
+			}
 		}
 		let lit1 = self.literals[1];
-		if variables[lit1.id()].has_value() && lit1.negated() != variables[lit1.id()].get_value() {
-			return Apply::Continue;
+		if let Some(val) = variables[lit1.id()].value() {
+			if lit1.negated() != val {
+				return Apply::Continue;
+			}
 		}
 
 		for i in 2..self.literals.len() {
 			let lit = self.literals[i];
-			if !variables[lit.id()].has_value() {
-				if variables[lit0.id()].has_value() {
-					variables[lit0.id()].unwatch(cid, lit0.negated());
-					variables[lit.id()].watch(cid, lit.negated());
-					self.literals.swap(0, i);
-					if !variables[lit1.id()].has_value() {
+			match variables[lit.id()].value() {
+				None => {
+					if variables[lit0.id()].has_value() {
+						variables[lit0.id()].unwatch(cid, lit0.negated());
+						variables[lit.id()].watch(cid, lit.negated());
+						self.literals.swap(0, i);
+						if !variables[lit1.id()].has_value() {
+							return Apply::Continue;
+						}
+						lit0 = lit
+					} else {
+						debug_assert!(variables[lit1.id()].has_value());
+						variables[lit1.id()].unwatch(cid, lit1.negated());
+						variables[lit.id()].watch(cid, lit.negated());
+						self.literals.swap(1, i);
 						return Apply::Continue;
 					}
-					lit0 = lit
-				} else {
-					debug_assert!(variables[lit1.id()].has_value());
-					variables[lit1.id()].unwatch(cid, lit1.negated());
-					variables[lit.id()].watch(cid, lit.negated());
-					self.literals.swap(1, i);
-					return Apply::Continue;
 				}
-			} else if lit.negated() != variables[lit.id()].get_value() {
-				self.percolate_sat(cid, variables, i);
-				return Apply::Continue;
+				Some(val) => {
+					if lit.negated() != val {
+						self.percolate_sat(cid, variables, i);
+						return Apply::Continue;
+					}
+				}
 			}
 		}
 		if variables[lit0.id()].has_value() {

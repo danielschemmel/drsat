@@ -126,9 +126,11 @@ impl Problem {
 				debug_assert!(self.variables[id].get_depth() <= depth);
 				if !marks[id] {
 					marks[id] = true;
-					if self.variables[id].get_depth() == 0 {
-					} else if self.variables[id].get_depth() == depth {
-						if self.variables[id].get_ante() == ::std::usize::MAX {
+					let d = self.variables[id].get_depth();
+					if d == 0 {
+					} else if d == depth {
+						let ante = self.variables[id].get_ante();
+						if ante == ::std::usize::MAX {
 							if implicated != ::std::usize::MAX {
 								queue.push(self.variables[lits[implicated].id()].get_ante());
 								lits.swap_remove(implicated);
@@ -136,7 +138,7 @@ impl Problem {
 							implicated = lits.len();
 							lits.push(Literal::new(id, negated));
 						} else if implicated != ::std::usize::MAX {
-							queue.push(self.variables[id].get_ante());
+							queue.push(ante);
 						} else {
 							implicated = lits.len();
 							lits.push(Literal::new(id, negated));
