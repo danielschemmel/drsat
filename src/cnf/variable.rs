@@ -2,8 +2,7 @@
 pub struct Variable {
 	q: f64,
 	name: String,
-	neg_clauses: Vec<usize>,
-	pos_clauses: Vec<usize>,
+	watchlists: [Vec<usize>; 2],
 	ante: usize,
 	depth: usize,
 	value: bool,
@@ -20,8 +19,7 @@ impl Variable {
 	pub fn new(name: String) -> Variable {
 		Variable {
 			name: name,
-			neg_clauses: Vec::new(),
-			pos_clauses: Vec::new(),
+			watchlists: [Vec::new(), Vec::new()],
 			ante: ::std::usize::MAX,
 			depth: ::std::usize::MAX,
 			value: false,
@@ -75,11 +73,7 @@ impl Variable {
 	}
 
 	pub fn get_clauses(&mut self, negative: bool) -> &mut Vec<usize> {
-		if negative {
-			&mut self.neg_clauses
-		} else {
-			&mut self.pos_clauses
-		}
+		&mut self.watchlists[negative as usize]
 	}
 
 	pub fn watch(&mut self, cid: usize, negated: bool) {
@@ -93,8 +87,8 @@ impl Variable {
 	}
 
 	pub fn clear_watched(&mut self) {
-		self.pos_clauses.clear();
-		self.neg_clauses.clear();
+		self.watchlists[0].clear();
+		self.watchlists[1].clear();
 	}
 
 	pub fn get_q(&self) -> f64 {
