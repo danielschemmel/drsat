@@ -228,8 +228,9 @@ impl Problem {
 			let id = self.applications[ai];
 			debug_assert!(self.variables[id].has_value());
 			let val = self.variables[id].get_value();
-			let moo: Vec<usize> = self.variables[id].get_clauses(val).iter().map(|&a| a).collect();
-			for cid in moo {
+			let mut ci: usize = 0;
+			while ci < self.variables[id].get_clauses(val).len() {
+				let cid = self.variables[id].get_clauses(val)[ci];
 				match self.clauses[cid].apply(cid, &mut self.variables) {
 					super::clause::Apply::Continue => {}
 					super::clause::Apply::Unsat => return cid,
@@ -240,6 +241,13 @@ impl Problem {
 						self.plays.push(lit.id());
 						self.clauses[cid].update_glue(&mut self.variables);
 					}
+				}
+				if let Some(&val) = self.variables[id].get_clauses(val).get(ci) {
+					if val == cid {
+						ci += 1;
+					}
+				} else {
+					break;
 				}
 			}
 			ai += 1;

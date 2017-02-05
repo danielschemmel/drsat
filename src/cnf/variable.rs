@@ -1,11 +1,9 @@
-use std::collections::BTreeSet;
-
 #[derive(Debug)]
 pub struct Variable {
 	q: f64,
 	name: String,
-	neg_clauses: BTreeSet<usize>,
-	pos_clauses: BTreeSet<usize>,
+	neg_clauses: Vec<usize>,
+	pos_clauses: Vec<usize>,
 	ante: usize,
 	depth: usize,
 	value: bool,
@@ -22,8 +20,8 @@ impl Variable {
 	pub fn new(name: String) -> Variable {
 		Variable {
 			name: name,
-			neg_clauses: BTreeSet::new(),
-			pos_clauses: BTreeSet::new(),
+			neg_clauses: Vec::new(),
+			pos_clauses: Vec::new(),
 			ante: ::std::usize::MAX,
 			depth: ::std::usize::MAX,
 			value: false,
@@ -76,7 +74,7 @@ impl Variable {
 		self.ante
 	}
 
-	pub fn get_clauses(&mut self, negative: bool) -> &mut BTreeSet<usize> {
+	pub fn get_clauses(&mut self, negative: bool) -> &mut Vec<usize> {
 		if negative {
 			&mut self.neg_clauses
 		} else {
@@ -85,15 +83,13 @@ impl Variable {
 	}
 
 	pub fn watch(&mut self, cid: usize, negated: bool) {
-		self.get_clauses(negated).insert(cid);
-	}
-
-	pub fn watches(&mut self, cid: usize, negated: bool) -> bool {
-		self.get_clauses(negated).contains(&cid)
+		self.get_clauses(negated).push(cid);
 	}
 
 	pub fn unwatch(&mut self, cid: usize, negated: bool) {
-		self.get_clauses(negated).remove(&cid);
+		let clauses = self.get_clauses(negated);
+		let pos = clauses.iter().position(|&x| x == cid).unwrap();
+		clauses.swap_remove(pos);
 	}
 
 	pub fn clear_watched(&mut self) {

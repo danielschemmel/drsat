@@ -54,7 +54,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 		problem.print_conflict_histo();
 	}
 	println!("Result: {:?}", result);
-	if result {
+	if result && false {
 		println!("Model:");
 		problem.print_model("  ");
 	}
