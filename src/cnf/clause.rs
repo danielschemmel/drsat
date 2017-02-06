@@ -52,12 +52,12 @@ impl Clause {
 		Ok(())
 	}
 
-	pub fn update_glue(&mut self, variables: &[Variable]) {
+	pub fn update_glue(&mut self, variables: &[Variable], max_depth: usize) {
 		if self.glue <= 2 {
 			return;
 		}
 		let mut marks = Vec::<bool>::new();
-		marks.resize(variables.len(), false);
+		marks.resize(max_depth + 1, false);
 		let mut glue: usize = 0;
 		for lit in &self.literals {
 			let depth = variables[lit.id()].get_depth();

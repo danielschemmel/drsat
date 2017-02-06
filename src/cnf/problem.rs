@@ -239,7 +239,7 @@ impl Problem {
 						self.variables[lit.id()].set(!lit.negated(), depth, cid);
 						self.applications.push(lit.id());
 						self.plays.push(lit.id());
-						self.clauses[cid].update_glue(&mut self.variables);
+						self.clauses[cid].update_glue(&mut self.variables, depth);
 					}
 				}
 				if let Some(&val) = self.variables[id].get_clauses(val).get(ci) {
