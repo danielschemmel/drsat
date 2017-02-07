@@ -40,6 +40,10 @@ impl Variable {
 		self.value
 	}
 
+	pub fn set_phase(&mut self, value: bool) {
+		self.value = value;
+	}
+
 	pub fn value(&self) -> Option<bool> {
 		if self.depth == ::std::usize::MAX {
 			None

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::io::{Error, Write};
 
@@ -49,8 +50,35 @@ impl Problem {
 	}
 
 	fn initialize(&mut self) {
+		let mut counters = Vec::<[HashMap<i32, usize>; 2]>::with_capacity(self.variables.len());
+		for _ in 0..self.variables.len() {
+			counters.push([HashMap::new(), HashMap::new()]);
+		}
 		for i in 0..self.clauses.len() {
+			let len = self.clauses[i].len();
+			for (id, negated) in self.clauses[i].iter().map(|lit| lit.disassemble()) {
+				*counters[id][negated as usize].entry(len as i32).or_insert(0) += 1; // FIXME: this cast is only mostly safe
+			}
 			self.clauses[i].initialize_watched(i, &mut self.variables);
+		}
+		for (id, count) in counters.iter_mut().enumerate() {
+			let lo: f64 = {
+				let mut vec: Vec<f64> = count[0].drain().map(|(len, c)| (2.0f64).powi(-len) * (c as f64)).collect();
+				vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
+				vec.iter().sum()
+			};
+			let hi: f64 = {
+				let mut vec: Vec<f64> = count[1].drain().map(|(len, c)| (2.0f64).powi(-len) * (c as f64)).collect();
+				vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
+				vec.iter().sum()
+			};
+			self.variables[id].set_phase(lo < hi);
+			self.variables[id].set_q(lo + hi);
+		}
+		let m: f64 = self.variables.iter().map(|v| v.get_q()).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+		for v in self.variables.iter_mut() {
+			let q = v.get_q();
+			v.set_q(q / m);
 		}
 	}
 
@@ -229,6 +257,7 @@ impl Problem {
 				choice = i;
 			}
 		}
+		debug_assert!(choice < self.variables.len() && !self.variables[choice].has_value());
 		choice
 	}
 
