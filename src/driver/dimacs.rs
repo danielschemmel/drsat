@@ -18,6 +18,10 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 			.short("t")
 			.long("time")
 			.help("Time the solving process"))
+		.arg(Arg::with_name("model")
+			.short("m")
+			.long("model")
+			.help("Print a model for satisfying results"))
 		.arg(Arg::with_name("dump-ast")
 			.long("dump-ast")
 			.help("Dump the AST of the problem after parsing it"))
@@ -54,7 +58,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 		problem.print_conflict_histo();
 	}
 	println!("Result: {:?}", result);
-	if result && false {
+	if result && matches.is_present("model") {
 		println!("Model:");
 		problem.print_model("  ");
 	}
