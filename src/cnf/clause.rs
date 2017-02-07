@@ -33,10 +33,8 @@ impl Clause {
 		let mut pa: usize = 0;
 		let mut db: usize = 0;
 		let mut pb: usize = 0;
-		for i in 0..literals.len() {
-			let lit = literals[i];
-			debug_assert!(variables[lit.id()].has_value());
-			let depth = variables[lit.id()].get_depth();
+		debug_assert!(literals.iter().all(|lit| variables[lit.id()].has_value()));
+		for (i, depth) in literals.iter().map(|lit| variables[lit.id()].get_depth()).enumerate() {
 			if !marks[depth] {
 				glue += 1;
 				marks[depth] = true;
