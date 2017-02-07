@@ -3,8 +3,6 @@ extern crate clap;
 #[macro_use]
 extern crate error_chain;
 extern crate flate2;
-#[macro_use]
-extern crate lazy_static;
 extern crate time;
 
 pub mod cnf;
