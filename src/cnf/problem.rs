@@ -20,6 +20,11 @@ pub struct Problem {
 	conflict_lens: Histo,
 }
 
+enum Learned {
+	Unit(Literal),
+	Clause(Literal),
+}
+
 impl Problem {
 	pub fn new(names: Vec<String>, clauses: Vec<Vec<Literal>>) -> Problem {
 		let varcount = names.len();
@@ -65,28 +70,30 @@ impl Problem {
 				}
 				gc_pos += 1;
 				self.num_conflicts += 1;
-				dl = self.learn(conflict, dl);
-				self.backjump(dl);
-				self.conflict_lens.add(self.clauses.last().unwrap().len() - 1);
-				if self.clauses.last().unwrap().len() == 1 {
-					debug_assert!(dl == 0);
-					let lit = self.clauses.last().unwrap().get_unit();
-					self.clauses.pop();
-					debug_assert!(!self.variables[lit.id()].has_value());
-					self.variables[lit.id()].set(!lit.negated(), 0, ::std::usize::MAX);
-					self.applications.push(lit.id());
-					conflict = self.propagate(dl);
-					if conflict != ::std::usize::MAX {
-						return false;
+				let (backtrack, learned) = self.learn(conflict, dl);
+				self.backjump(backtrack);
+				dl = backtrack;
+				match learned {
+					Learned::Unit(lit) => {
+						debug_assert!(dl == 0);
+						self.conflict_lens.add(0);
+						debug_assert!(!self.variables[lit.id()].has_value());
+						self.variables[lit.id()].set(!lit.negated(), dl, ::std::usize::MAX);
+						self.applications.push(lit.id());
+						conflict = self.propagate(dl);
+						if conflict != ::std::usize::MAX {
+							return false;
+						}
+						self.active_variables -= self.applications.len();
+						self.applications.clear();
 					}
-					self.active_variables -= self.applications.len();
-					self.applications.clear();
-				} else {
-					self.clauses.last().unwrap().notify_watched(self.clauses.len() - 1, &mut self.variables);
-					let lit = self.clauses.last().unwrap().get_unit(); // it ain't no actual unit clause, but a newly learned clause will have the assertive element first
-					self.variables[lit.id()].set(!lit.negated(), dl, self.clauses.len() - 1);
-					self.applications.push(lit.id());
-					conflict = self.propagate(dl);
+					Learned::Clause(lit) => {
+						self.conflict_lens.add(self.clauses.last().unwrap().len() - 1);
+						self.clauses.last().unwrap().notify_watched(self.clauses.len() - 1, &mut self.variables);
+						self.variables[lit.id()].set(!lit.negated(), dl, self.clauses.len() - 1);
+						self.applications.push(lit.id());
+						conflict = self.propagate(dl);
+					}
 				}
 			} else {
 				if self.active_variables == self.applications.len() {
@@ -109,19 +116,20 @@ impl Problem {
 		}
 	}
 
-	fn learn(&mut self, mut cid: usize, depth: usize) -> usize {
+	fn learn(&mut self, mut cid: usize, depth: usize) -> (usize, Learned) {
 		debug_assert!(depth > 0);
 		for lit in self.clauses[cid].iter() {
 			self.last_conflict[lit.id()] = self.num_conflicts;
+			debug_assert!(self.variables[lit.id()].has_value());
 		}
+		debug_assert!(self.clauses[cid].iter().map(|lit| self.variables[lit.id()].get_depth()).max().unwrap() == depth);
 		let mut marks = Vec::<bool>::new();
 		marks.resize(self.variables.len(), false);
 		let mut lits = Vec::<Literal>::new();
 		let mut queue = Vec::<usize>::with_capacity(self.clauses[cid].len());
 		let mut implicated = ::std::usize::MAX;
 		loop {
-			for lit in self.clauses[cid].iter() {
-				let (id, negated) = lit.disassemble();
+			for (id, negated) in self.clauses[cid].iter().map(|lit| lit.disassemble()) {
 				debug_assert!(self.variables[id].has_value());
 				debug_assert!(self.variables[id].get_depth() <= depth);
 				if !marks[id] {
@@ -155,14 +163,18 @@ impl Problem {
 		}
 		debug_assert!(implicated != ::std::usize::MAX);
 		self.minimize(&mut lits, marks, depth);
-		lits.sort_by(|ref lhs, ref rhs| self.variables[rhs.id()].get_depth().cmp(&self.variables[lhs.id()].get_depth()));
-		let backtrack = if lits.len() > 1 {
-			self.variables[lits[1].id()].get_depth()
+		if lits.len() == 1 {
+			let lit = lits[0];
+			debug_assert!(self.variables[lit.id()].has_value());
+			debug_assert!(self.variables[lit.id()].get_depth() == depth);
+			(0, Learned::Unit(lit))
 		} else {
-			0
-		};
-		self.clauses.push(Clause::from_learned(lits, &self.variables));
-		backtrack
+			let (backtrack, lit, clause) = Clause::from_learned(lits, &self.variables, depth);
+			self.clauses.push(clause);
+			debug_assert!(self.variables[lit.id()].has_value());
+			debug_assert!(self.variables[lit.id()].get_depth() == depth);
+			(backtrack, Learned::Clause(lit))
+		}
 	}
 
 	pub fn minimize(&self, lits: &mut Vec<Literal>, marks: Vec<bool>, depth: usize) {

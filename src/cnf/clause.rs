@@ -4,6 +4,7 @@ use super::{Literal, Variable};
 #[derive(Debug)]
 pub struct Clause {
 	literals: Vec<Literal>,
+	watched: [usize; 2],
 	glue: usize,
 }
 
@@ -17,25 +18,47 @@ impl Clause {
 	pub fn new(literals: Vec<Literal>, glue: usize) -> Clause {
 		Clause {
 			literals: literals,
+			watched: [0, 1],
 			glue: glue,
 		}
 	}
 
 	// important condition: lits must be sorted by variable depth
-	pub fn from_learned(literals: Vec<Literal>, variables: &[Variable]) -> Clause {
-		let mut glue: usize = 1;
-		let mut d = variables[literals[0].id()].get_depth();
-		for lit in &literals[1..] {
-			let curd = variables[lit.id()].get_depth();
-			if curd != d {
-				d = curd;
+	pub fn from_learned(mut literals: Vec<Literal>, variables: &[Variable], max_depth: usize) -> (usize, Literal, Clause) {
+		literals.sort();
+		let mut marks = Vec::<bool>::new();
+		marks.resize(max_depth + 1, false);
+		let mut glue: usize = 0;
+		let mut da: usize = 0;
+		let mut pa: usize = 0;
+		let mut db: usize = 0;
+		let mut pb: usize = 0;
+		for i in 0..literals.len() {
+			let lit = literals[i];
+			debug_assert!(variables[lit.id()].has_value());
+			let depth = variables[lit.id()].get_depth();
+			if !marks[depth] {
 				glue += 1;
+				marks[depth] = true;
+			}
+			if depth > da {
+				db = da;
+				pb = pa;
+				da = depth;
+				pa = i;
+			} else if depth > db {
+				db = depth;
+				pb = i;
 			}
 		}
-		Clause {
-			literals: literals,
-			glue: glue,
-		}
+		let lit = literals[pa];
+		(db,
+		 lit,
+		 Clause {
+			 literals: literals,
+			 watched: [pa, pb],
+			 glue: glue,
+		 })
 	}
 
 	pub fn iter(&self) -> ::std::slice::Iter<Literal> {
@@ -68,9 +91,9 @@ impl Clause {
 					return;
 				}
 			}
-			debug_assert!(glue < self.glue);
-			self.glue = glue;
 		}
+		debug_assert!(glue < self.glue);
+		self.glue = glue;
 	}
 
 	pub fn get_glue(&self) -> usize {
@@ -81,13 +104,10 @@ impl Clause {
 		self.literals.len()
 	}
 
-	pub fn get_unit(&self) -> Literal {
-		self.literals[0]
-	}
-
 	/// The idea of this function is to distribute the (initial) watch list effort
 	/// fairly over all variables
 	pub fn initialize_watched(&mut self, cid: usize, variables: &mut Vec<Variable>) {
+		self.literals.sort();
 		let mut a: usize = 0;
 		let mut sa = ::std::usize::MAX;
 		let mut b: usize = 0;
@@ -111,36 +131,58 @@ impl Clause {
 	}
 
 	pub fn notify_watched(&self, cid: usize, variables: &mut Vec<Variable>) {
-		variables[self.literals[0].id()].watch(cid, self.literals[0].negated());
-		variables[self.literals[1].id()].watch(cid, self.literals[1].negated());
+		let lit0 = self.literals[self.watched[0]];
+		variables[lit0.id()].watch(cid, lit0.negated());
+		let lit1 = self.literals[self.watched[1]];
+		variables[lit1.id()].watch(cid, lit1.negated());
 	}
 
 	pub fn is_watched(&self, id: usize) -> bool {
-		self.literals[0].id() == id || self.literals[1].id() == id
+		self.literals[self.watched[0]].id() == id || self.literals[self.watched[1]].id() == id
 	}
 
 	pub fn apply(&mut self, cid: usize, variables: &mut Vec<Variable>) -> Apply {
-		let mut lit0 = self.literals[0];
+		let mut lit0 = self.literals[self.watched[0]];
 		if let Some(val) = variables[lit0.id()].value() {
 			if lit0.negated() != val {
 				return Apply::Continue;
 			}
 		}
-		let lit1 = self.literals[1];
+		let lit1 = self.literals[self.watched[1]];
 		if let Some(val) = variables[lit1.id()].value() {
 			if lit1.negated() != val {
 				return Apply::Continue;
 			}
 		}
 
-		for i in 2..self.literals.len() {
+		let start = self.watched[0];
+		let mut i = start;
+		loop {
+			if i + 1 == self.literals.len() {
+				i = 0;
+			} else {
+				i = i + 1;
+			}
+			if i == self.watched[1] {
+				if i + 1 == self.literals.len() {
+					i = 0;
+				} else {
+					i = i + 1;
+				}
+			}
+			if i == start {
+				break;
+			}
+			debug_assert!(i != self.watched[0]);
+			debug_assert!(i != self.watched[1]);
+			debug_assert!(i != start);
 			let lit = self.literals[i];
 			match variables[lit.id()].value() {
 				None => {
 					if variables[lit0.id()].has_value() {
 						variables[lit0.id()].unwatch(cid, lit0.negated());
 						variables[lit.id()].watch(cid, lit.negated());
-						self.literals.swap(0, i);
+						self.watched[0] = i;
 						if !variables[lit1.id()].has_value() {
 							return Apply::Continue;
 						}
@@ -149,13 +191,13 @@ impl Clause {
 						debug_assert!(variables[lit1.id()].has_value());
 						variables[lit1.id()].unwatch(cid, lit1.negated());
 						variables[lit.id()].watch(cid, lit.negated());
-						self.literals.swap(1, i);
+						self.watched[1] = i;
 						return Apply::Continue;
 					}
 				}
 				Some(val) => {
 					if lit.negated() != val {
-						self.percolate_sat(cid, variables, i);
+						self.percolate_sat(cid, variables, start, i, lit);
 						return Apply::Continue;
 					}
 				}
@@ -176,21 +218,39 @@ impl Clause {
 		}
 	}
 
-	fn percolate_sat(&mut self, cid: usize, variables: &mut Vec<Variable>, mut pos: usize) {
-		let mut mind = variables[self.literals[pos].id()].get_depth();
-		for i in pos + 1..self.literals.len() {
+	fn percolate_sat(&mut self, cid: usize, variables: &mut Vec<Variable>, start: usize, mut pos: usize, lit: Literal) {
+		let mut mind = variables[lit.id()].get_depth();
+		let mut i = pos;
+		loop {
+			if i + 1 == self.literals.len() {
+				i = 0;
+			} else {
+				i = i + 1;
+			}
+			if i == self.watched[1] {
+				if i + 1 == self.literals.len() {
+					i = 0;
+				} else {
+					i = i + 1;
+				}
+			}
+			if i == start {
+				break;
+			}
 			let d = variables[self.literals[i].id()].get_depth();
 			if d < mind {
 				mind = d;
 				pos = i;
 			}
 		}
-		if pos > 1 {
-			variables[self.literals[0].id()].unwatch(cid, self.literals[0].negated());
-			variables[self.literals[pos].id()].watch(cid, self.literals[pos].negated());
-			self.literals.swap(0, pos);
-		} else if pos == 1 {
-			self.literals.swap(0, 1);
+		if pos != self.watched[0] {
+			if pos != self.watched[1] {
+				variables[self.literals[self.watched[0]].id()].unwatch(cid, self.literals[self.watched[0]].negated());
+				variables[self.literals[pos].id()].watch(cid, self.literals[pos].negated());
+				self.watched[0] = pos;
+			} else {
+				self.watched.swap(0, 1);
+			}
 		}
 	}
 }
