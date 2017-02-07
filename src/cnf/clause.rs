@@ -123,8 +123,8 @@ impl Clause {
 				sb = len;
 			}
 		}
-		self.literals.swap(0, a);
-		self.literals.swap(1, b);
+		self.watched[0] = a;
+		self.watched[1] = b;
 		self.notify_watched(cid, variables);
 	}
 
