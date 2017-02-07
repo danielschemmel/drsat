@@ -130,9 +130,11 @@ impl Clause {
 
 	pub fn notify_watched(&self, cid: usize, variables: &mut Vec<Variable>) {
 		let lit0 = self.literals[self.watched[0]];
-		variables[lit0.id()].watch(cid, lit0.negated());
-		let lit1 = self.literals[self.watched[1]];
-		variables[lit1.id()].watch(cid, lit1.negated());
+		if !variables[lit0.id()].has_value() || variables[lit0.id()].get_depth() != 0 {
+			variables[lit0.id()].watch(cid, lit0.negated());
+			let lit1 = self.literals[self.watched[1]];
+			variables[lit1.id()].watch(cid, lit1.negated());
+		}
 	}
 
 	pub fn is_watched(&self, id: usize) -> bool {
@@ -241,7 +243,11 @@ impl Clause {
 				pos = i;
 			}
 		}
-		if pos != self.watched[0] {
+		if variables[self.literals[pos].id()].get_depth() == 0 {
+			variables[self.literals[self.watched[0]].id()].unwatch(cid, self.literals[self.watched[0]].negated());
+			variables[self.literals[self.watched[1]].id()].unwatch(cid, self.literals[self.watched[1]].negated());
+			//self.glue = ::std::usize::MAX; // why does this actually *hurt*?!
+		} else if pos != self.watched[0] {
 			if pos != self.watched[1] {
 				variables[self.literals[self.watched[0]].id()].unwatch(cid, self.literals[self.watched[0]].negated());
 				variables[self.literals[pos].id()].watch(cid, self.literals[pos].negated());

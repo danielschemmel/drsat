@@ -56,7 +56,7 @@ impl Problem {
 
 	pub fn solve(&mut self) -> bool {
 		let mut dl: usize = 0;
-		let mut gc_next: u32 = 5000;
+		let mut gc_next: u32 = 2047;
 		let mut gc_pos: u32 = 0;
 		let mut conflict = ::std::usize::MAX;
 		loop {
@@ -100,7 +100,7 @@ impl Problem {
 					return true;
 				}
 				if gc_pos >= gc_next {
-					gc_next += 500;
+					gc_next += 256;
 					gc_pos = 0;
 					dl = 0; // FIXME: restarts and garbage collection should be independent!
 					self.delete_clauses();
@@ -135,8 +135,7 @@ impl Problem {
 				if !marks[id] {
 					marks[id] = true;
 					let d = self.variables[id].get_depth();
-					if d == 0 {
-					} else if d == depth {
+					if d == depth {
 						let ante = self.variables[id].get_ante();
 						if ante == ::std::usize::MAX {
 							if implicated != ::std::usize::MAX {
@@ -151,7 +150,7 @@ impl Problem {
 							implicated = lits.len();
 							lits.push(Literal::new(id, negated));
 						}
-					} else {
+					} else if d != 0 {
 						lits.push(Literal::new(id, negated));
 					}
 				}
