@@ -18,6 +18,12 @@ fn gen_cli() -> App<'static, 'static> {
 		.subcommand(driver::dimacs::setup_command(SubCommand::with_name("dimacs")))
 		.subcommand(driver::stats::setup_command(SubCommand::with_name("stats")))
 		.subcommand(driver::completion::setup_command(SubCommand::with_name("completion")))
+		.subcommand(SubCommand::with_name("version").about("Prints version information"))
+}
+
+fn print_version() -> Result<()> {
+	println!("{} {}", NAME, VERSION);
+	Ok(())
 }
 
 fn run() -> Result<()> {
@@ -25,6 +31,7 @@ fn run() -> Result<()> {
 		("completion", Some(matches)) => libdsat::driver::completion::run_command(gen_cli(), matches, NAME),
 		("dimacs", Some(matches)) => libdsat::driver::dimacs::main(matches),
 		("stats", Some(matches)) => libdsat::driver::stats::main(matches),
+		("version", Some(_)) => print_version(),
 		_ => unreachable!(),
 	}
 }
