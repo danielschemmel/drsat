@@ -20,4 +20,3 @@ fn load(path: &str) -> Result<Box<BufRead>> {
 		Ok(Box::new(::std::io::BufReader::new(file)))
 	}
 }
-

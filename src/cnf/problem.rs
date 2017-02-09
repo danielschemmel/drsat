@@ -250,13 +250,17 @@ impl Problem {
 	}
 
 	fn choose(&self) -> usize {
-		self.variables.iter().enumerate().filter_map(|(i, ref var)|
-			if !var.has_value() {
+		self.variables
+			.iter()
+			.enumerate()
+			.filter_map(|(i, ref var)| if !var.has_value() {
 				Some((i, var.get_q()))
 			} else {
 				None
-			}
-		).max_by(|&(_, ref a), &(_, ref b)| a.partial_cmp(b).unwrap()).unwrap().0
+			})
+			.max_by(|&(_, ref a), &(_, ref b)| a.partial_cmp(b).unwrap())
+			.unwrap()
+			.0
 	}
 
 	fn propagate(&mut self, depth: usize) -> usize {
