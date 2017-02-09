@@ -5,6 +5,7 @@ use std::io::{Error, Write};
 use util::Histo;
 
 use super::{Clause, Literal, Variable};
+use SolverResult;
 
 #[derive(Debug)]
 pub struct Problem {
@@ -82,7 +83,7 @@ impl Problem {
 		}
 	}
 
-	pub fn solve(&mut self) -> bool {
+	pub fn solve(&mut self) -> SolverResult {
 		let mut dl: usize = 0;
 		let mut gc_next: u32 = 2047;
 		let mut gc_pos: u32 = 0;
@@ -91,7 +92,7 @@ impl Problem {
 			self.update_q(conflict);
 			if conflict != ::std::usize::MAX {
 				if dl == 0 {
-					return false;
+					return SolverResult::Unsat;
 				}
 				if self.alpha > 0.06 {
 					self.alpha -= 1e-6;
@@ -110,7 +111,7 @@ impl Problem {
 						self.applications.push(lit.id());
 						conflict = self.propagate(dl);
 						if conflict != ::std::usize::MAX {
-							return false;
+							return SolverResult::Unsat;
 						}
 						self.active_variables -= self.applications.len();
 						self.applications.clear();
@@ -125,7 +126,7 @@ impl Problem {
 				}
 			} else {
 				if self.active_variables == self.applications.len() {
-					return true;
+					return SolverResult::Sat;
 				}
 				if gc_pos >= gc_next {
 					gc_next += 256;

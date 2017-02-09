@@ -12,3 +12,9 @@ pub mod parser;
 pub mod util;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
+
+pub enum SolverResult {
+	Sat,
+	Unsat,
+	Unknown,
+}

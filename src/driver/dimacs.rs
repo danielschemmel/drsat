@@ -5,6 +5,7 @@ use clap::{ArgMatches, Arg, App};
 use flate2::read::GzDecoder;
 
 use super::errors::*;
+use SolverResult;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Parse and solve a dimacs file")
@@ -57,10 +58,19 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 		println!("[T] Solving query: {}", sw);
 		problem.print_conflict_histo();
 	}
-	println!("Result: {:?}", result);
-	if result && matches.is_present("model") {
-		println!("Model:");
-		problem.print_model("  ");
+	match result {
+		SolverResult::Sat => println!("Result: Satisfiable"),
+		SolverResult::Unsat => println!("Result: Unsatisfiable"),
+		SolverResult::Unknown => println!("Result: Unknown"),
+	}
+	if matches.is_present("model") {
+		match result {
+			SolverResult::Sat => {
+				println!("Model:");
+				problem.print_model("  ");
+			}
+			_ => {}
+		}
 	}
 
 	Ok(())
