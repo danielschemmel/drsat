@@ -129,7 +129,7 @@ impl Problem {
 					return SolverResult::Sat;
 				}
 				if gc_pos >= gc_next {
-					gc_next += 256;
+					gc_next += 128;
 					gc_pos = 0;
 					dl = 0; // FIXME: restarts and garbage collection should be independent!
 					self.delete_clauses();
