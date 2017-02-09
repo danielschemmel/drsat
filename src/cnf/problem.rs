@@ -87,10 +87,10 @@ impl Problem {
 		let mut dl: usize = 0;
 		let mut gc_next: u32 = 2047;
 		let mut gc_pos: u32 = 0;
-		let mut conflict = ::std::usize::MAX;
+		let mut conflict: Option<usize> = None;
 		loop {
-			self.update_q(conflict);
-			if conflict != ::std::usize::MAX {
+			self.update_q(&conflict);
+			if let Some(cid) = conflict {
 				if dl == 0 {
 					return SolverResult::Unsat;
 				}
@@ -99,7 +99,7 @@ impl Problem {
 				}
 				gc_pos += 1;
 				self.num_conflicts += 1;
-				let (backtrack, learned) = self.learn(conflict, dl);
+				let (backtrack, learned) = self.learn(cid, dl);
 				self.backjump(backtrack);
 				dl = backtrack;
 				match learned {
@@ -110,7 +110,7 @@ impl Problem {
 						self.variables[lit.id()].set(!lit.negated(), dl, ::std::usize::MAX);
 						self.applications.push(lit.id());
 						conflict = self.propagate(dl);
-						if conflict != ::std::usize::MAX {
+						if conflict.is_some() {
 							return SolverResult::Unsat;
 						}
 						self.active_variables -= self.applications.len();
@@ -235,8 +235,8 @@ impl Problem {
 		}
 	}
 
-	fn update_q(&mut self, conflict: usize) {
-		let multiplier = if conflict != ::std::usize::MAX {
+	fn update_q(&mut self, conflict: &Option<usize>) {
+		let multiplier = if conflict.is_some() {
 			self.alpha
 		} else {
 			0.9 * self.alpha
@@ -263,7 +263,7 @@ impl Problem {
 			.0
 	}
 
-	fn propagate(&mut self, depth: usize) -> usize {
+	fn propagate(&mut self, depth: usize) -> Option<usize> {
 		debug_assert!(!self.applications.is_empty());
 		let mut ai = self.applications.len() - 1;
 		while {
@@ -275,7 +275,7 @@ impl Problem {
 				let cid = self.variables[id].get_clauses(val)[ci];
 				match self.clauses[cid].apply(cid, &mut self.variables) {
 					super::clause::Apply::Continue => {}
-					super::clause::Apply::Unsat => return cid,
+					super::clause::Apply::Unsat => return Some(cid),
 					super::clause::Apply::Unit(lit) => {
 						debug_assert!(!self.variables[lit.id()].has_value());
 						self.variables[lit.id()].set(!lit.negated(), depth, cid);
@@ -295,7 +295,7 @@ impl Problem {
 			ai += 1;
 			ai < self.applications.len()
 		} {}
-		::std::usize::MAX
+		None
 	}
 
 	fn delete_clauses(&mut self) {
