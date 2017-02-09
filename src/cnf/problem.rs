@@ -205,17 +205,27 @@ impl Problem {
 		}
 	}
 
-	fn subsumption_check(&self, cid: usize, marks: &mut Vec<bool>) -> bool {
-		self.clauses[cid].iter().all(|lit| marks[lit.id()])
+	fn subsumption_check(&self, vid: usize, marks: &mut Vec<bool>, depth: usize) -> bool {
+		for id in self.clauses[self.variables[vid].get_ante()].iter().map(|lit| lit.id()) {
+			if vid != id && !marks[id] && self.variables[id].get_depth() != 0 {
+				let ante = self.variables[id].get_ante();
+				if ante != ::std::usize::MAX && self.subsumption_check(id, marks, depth) {
+					marks[id] = true;
+				} else {
+					return false;
+				}
+			}
+		}
+		true
 	}
 
 	pub fn minimize(&self, lits: &mut Vec<Literal>, mut marks: Vec<bool>, depth: usize) {
 		let mut i: usize = 0;
 		while i < lits.len() {
 			let ref var = self.variables[lits[i].id()];
-			let ante = var.get_ante();
-			if ante != ::std::usize::MAX && var.get_depth() != depth {
-				if self.subsumption_check(ante, &mut marks) {
+			if var.get_ante() != ::std::usize::MAX && var.get_depth() != depth {
+				//if var.get_depth() == 0 || self.clauses[lits[i].id()].iter().all(|lit| marks[lit.id()]) {
+				if var.get_depth() == 0 || self.subsumption_check(lits[i].id(), &mut marks, depth) {
 					lits.swap_remove(i);
 				} else {
 					i += 1;
