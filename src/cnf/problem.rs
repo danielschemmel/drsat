@@ -85,7 +85,7 @@ impl Problem {
 
 	pub fn solve(&mut self) -> SolverResult {
 		let mut dl: usize = 0;
-		let mut gc_next: u32 = 2047;
+		let mut gc_next: u32 = 2047; // a u32 is safe, as the runtime to cause an overflow is prohibitive
 		let mut gc_pos: u32 = 0;
 		let mut conflict: Option<usize> = None;
 		loop {
@@ -129,7 +129,7 @@ impl Problem {
 					return SolverResult::Sat;
 				}
 				if gc_pos >= gc_next {
-					gc_next += 128;
+					gc_next += 512;
 					gc_pos = 0;
 					dl = 0; // FIXME: restarts and garbage collection should be independent!
 					self.delete_clauses();
@@ -205,12 +205,17 @@ impl Problem {
 		}
 	}
 
-	pub fn minimize(&self, lits: &mut Vec<Literal>, marks: Vec<bool>, depth: usize) {
+	fn subsumption_check(&self, cid: usize, marks: &mut Vec<bool>) -> bool {
+		self.clauses[cid].iter().all(|lit| marks[lit.id()])
+	}
+
+	pub fn minimize(&self, lits: &mut Vec<Literal>, mut marks: Vec<bool>, depth: usize) {
 		let mut i: usize = 0;
 		while i < lits.len() {
 			let ref var = self.variables[lits[i].id()];
-			if var.get_ante() != ::std::usize::MAX && var.get_depth() != depth {
-				if self.clauses[var.get_ante()].iter().all(|lit| marks[lit.id()]) {
+			let ante = var.get_ante();
+			if ante != ::std::usize::MAX && var.get_depth() != depth {
+				if self.subsumption_check(ante, &mut marks) {
 					lits.swap_remove(i);
 				} else {
 					i += 1;
