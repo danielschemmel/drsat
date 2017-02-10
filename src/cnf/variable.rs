@@ -95,11 +95,11 @@ impl Variable {
 		self.watchlists[1].clear();
 	}
 
-	pub fn get_q(&self) -> f64 {
-		self.q
+	pub fn q(&self) -> &f64 {
+		&self.q
 	}
 
-	pub fn set_q(&mut self, q: f64) {
-		self.q = q;
+	pub fn q_mut(&mut self) -> &mut f64 {
+		&mut self.q
 	}
 }

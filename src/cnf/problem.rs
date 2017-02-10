@@ -74,12 +74,11 @@ impl Problem {
 				vec.iter().sum()
 			};
 			self.variables[id].set_phase(lo < hi);
-			self.variables[id].set_q(lo + hi);
+			*self.variables[id].q_mut() = lo + hi;
 		}
-		let m: f64 = self.variables.iter().map(|v| v.get_q()).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+		let m: f64 = *self.variables.iter().map(|v| v.q()).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
 		for v in self.variables.iter_mut() {
-			let q = v.get_q();
-			v.set_q(q / m);
+			*v.q_mut() /= m;
 		}
 	}
 
@@ -258,9 +257,8 @@ impl Problem {
 		};
 		let nalpha = 1.0 - self.alpha;
 		for id in self.plays.drain(..) {
-			let old_part = nalpha * self.variables[id].get_q();
-			let new_part = multiplier / ((self.num_conflicts - self.last_conflict[id] + 1) as f64);
-			self.variables[id].set_q(old_part + new_part);
+			let q = self.variables[id].q_mut();
+			*q = nalpha * *q + multiplier / ((self.num_conflicts - self.last_conflict[id] + 1) as f64);
 		}
 	}
 
@@ -269,7 +267,7 @@ impl Problem {
 			.iter()
 			.enumerate()
 			.filter_map(|(i, ref var)| if !var.has_value() {
-				Some((i, var.get_q()))
+				Some((i, var.q()))
 			} else {
 				None
 			})
