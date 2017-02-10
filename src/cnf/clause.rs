@@ -23,7 +23,6 @@ impl Clause {
 		}
 	}
 
-	// important condition: lits must be sorted by variable depth
 	pub fn from_learned(mut literals: Vec<Literal>, variables: &[Variable], max_depth: usize) -> (usize, Literal, Clause) {
 		literals.sort();
 		let mut marks = Vec::<bool>::new();
