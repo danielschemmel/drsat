@@ -18,13 +18,9 @@ pub struct Problem {
 	num_conflicts: usize,
 	last_conflict: Vec<usize>,
 	plays: Vec<usize>,
+	depth: usize,
 	active_variables: usize,
 	conflict_lens: Histo,
-}
-
-enum Learned {
-	Unit(Literal),
-	Clause(Literal),
 }
 
 impl Problem {
@@ -43,6 +39,7 @@ impl Problem {
 			num_conflicts: 0,
 			last_conflict: last_conflict,
 			plays: Vec::with_capacity(varcount),
+			depth: 0,
 			active_variables: varcount,
 			conflict_lens: Histo::new(),
 		};
@@ -83,14 +80,13 @@ impl Problem {
 	}
 
 	pub fn solve(&mut self) -> SolverResult {
-		let mut dl: usize = 0;
 		let mut gc_next: u32 = 2047; // a u32 is safe, as the runtime to cause an overflow is prohibitive
 		let mut gc_pos: u32 = 0;
 		let mut conflict: Option<usize> = None;
 		loop {
 			self.update_q(&conflict);
 			if let Some(cid) = conflict {
-				if dl == 0 {
+				if self.depth == 0 {
 					return SolverResult::Unsat;
 				}
 				if self.alpha > 0.06 {
@@ -98,31 +94,8 @@ impl Problem {
 				}
 				gc_pos += 1;
 				self.num_conflicts += 1;
-				let (backtrack, learned) = self.learn(cid, dl);
-				self.backjump(backtrack);
-				dl = backtrack;
-				match learned {
-					Learned::Unit(lit) => {
-						debug_assert!(dl == 0);
-						self.conflict_lens.add(0);
-						debug_assert!(!self.variables[lit.id()].has_value());
-						self.variables[lit.id()].set(!lit.negated(), dl, ::std::usize::MAX);
-						self.applications.push(lit.id());
-						conflict = self.propagate(dl);
-						if conflict.is_some() {
-							return SolverResult::Unsat;
-						}
-						self.active_variables -= self.applications.len();
-						self.applications.clear();
-					}
-					Learned::Clause(lit) => {
-						self.conflict_lens.add(self.clauses.last().unwrap().len() - 1);
-						self.clauses.last().unwrap().notify_watched(self.clauses.len() - 1, &mut self.variables);
-						self.variables[lit.id()].set(!lit.negated(), dl, self.clauses.len() - 1);
-						self.applications.push(lit.id());
-						conflict = self.propagate(dl);
-					}
-				}
+				let lits = self.learn(cid);
+				conflict = self.propagate_learned(lits);
 			} else {
 				if self.active_variables == self.applications.len() {
 					return SolverResult::Sat;
@@ -130,27 +103,23 @@ impl Problem {
 				if gc_pos >= gc_next {
 					gc_next += 512;
 					gc_pos = 0;
-					dl = 0; // FIXME: restarts and garbage collection should be independent!
+					self.restart(); // FIXME: restarts and garbage collection should be independent!
 					self.delete_clauses();
 				}
 
-				let choice = self.choose();
-				self.plays.push(choice);
-				dl += 1;
-				self.variables[choice].enable(dl);
-				self.applications.push(choice);
-				conflict = self.propagate(dl);
+				self.choose();
+				conflict = self.propagate();
 			}
 		}
 	}
 
-	fn learn(&mut self, mut cid: usize, depth: usize) -> (usize, Learned) {
-		debug_assert!(depth > 0);
+	fn learn(&mut self, mut cid: usize) -> Vec<Literal> {
+		debug_assert!(self.depth > 0);
 		for lit in self.clauses[cid].iter() {
 			self.last_conflict[lit.id()] = self.num_conflicts;
 			debug_assert!(self.variables[lit.id()].has_value());
 		}
-		debug_assert!(self.clauses[cid].iter().map(|lit| self.variables[lit.id()].get_depth()).max().unwrap() == depth);
+		debug_assert!(self.clauses[cid].iter().map(|lit| self.variables[lit.id()].get_depth()).max().unwrap() == self.depth);
 		let mut marks = Vec::<bool>::new();
 		marks.resize(self.variables.len(), false);
 		let mut lits = Vec::<Literal>::new();
@@ -159,11 +128,11 @@ impl Problem {
 		loop {
 			for (id, negated) in self.clauses[cid].iter().map(|lit| lit.disassemble()) {
 				debug_assert!(self.variables[id].has_value());
-				debug_assert!(self.variables[id].get_depth() <= depth);
+				debug_assert!(self.variables[id].get_depth() <= self.depth);
 				if !marks[id] {
 					marks[id] = true;
 					let d = self.variables[id].get_depth();
-					if d == depth {
+					if d == self.depth {
 						let ante = self.variables[id].get_ante();
 						if ante == ::std::usize::MAX {
 							if implicated != ::std::usize::MAX {
@@ -189,26 +158,43 @@ impl Problem {
 			}
 		}
 		debug_assert!(implicated != ::std::usize::MAX);
-		self.minimize(&mut lits, marks, depth);
+		self.minimize(&mut lits, marks);
+		lits
+	}
+
+	fn propagate_learned(&mut self, lits: Vec<Literal>) -> Option<usize> {
 		if lits.len() == 1 {
 			let lit = lits[0];
 			debug_assert!(self.variables[lit.id()].has_value());
-			debug_assert!(self.variables[lit.id()].get_depth() == depth);
-			(0, Learned::Unit(lit))
+			debug_assert!(self.variables[lit.id()].get_depth() == self.depth);
+			self.restart();
+			self.conflict_lens.add(0);
+			debug_assert!(!self.variables[lit.id()].has_value());
+			self.variables[lit.id()].set(!lit.negated(), self.depth, ::std::usize::MAX);
+			self.applications.push(lit.id());
+			let conflict = self.propagate();
+			self.active_variables -= self.applications.len();
+			self.applications.clear();
+			conflict
 		} else {
-			let (backtrack, lit, clause) = Clause::from_learned(lits, &self.variables, depth);
+			let (backtrack, lit, clause) = Clause::from_learned(lits, &self.variables, self.depth);
+			self.depth = backtrack;
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id()].has_value());
-			debug_assert!(self.variables[lit.id()].get_depth() == depth);
-			(backtrack, Learned::Clause(lit))
+			debug_assert!(self.variables[lit.id()].get_depth() == self.depth);
+			self.backjump();
+			self.conflict_lens.add(self.clauses.last().unwrap().len() - 1);
+			self.clauses.last().unwrap().notify_watched(self.clauses.len() - 1, &mut self.variables);
+			self.variables[lit.id()].set(!lit.negated(), self.depth, self.clauses.len() - 1);
+			self.applications.push(lit.id());
+			self.propagate()
 		}
 	}
 
-	fn subsumption_check(&self, vid: usize, marks: &mut Vec<bool>, depth: usize) -> bool {
+	fn subsumption_check(&self, vid: usize, marks: &mut Vec<bool>) -> bool {
 		for id in self.clauses[self.variables[vid].get_ante()].iter().map(|lit| lit.id()) {
 			if vid != id && !marks[id] && self.variables[id].get_depth() != 0 {
-				let ante = self.variables[id].get_ante();
-				if ante != ::std::usize::MAX && self.subsumption_check(id, marks, depth) {
+				if self.variables[id].get_ante() != ::std::usize::MAX && self.subsumption_check(id, marks) {
 					marks[id] = true;
 				} else {
 					return false;
@@ -218,13 +204,12 @@ impl Problem {
 		true
 	}
 
-	pub fn minimize(&self, lits: &mut Vec<Literal>, mut marks: Vec<bool>, depth: usize) {
+	pub fn minimize(&self, lits: &mut Vec<Literal>, mut marks: Vec<bool>) {
 		let mut i: usize = 0;
 		while i < lits.len() {
 			let ref var = self.variables[lits[i].id()];
-			if var.get_ante() != ::std::usize::MAX && var.get_depth() != depth {
-				//if var.get_depth() == 0 || self.clauses[lits[i].id()].iter().all(|lit| marks[lit.id()]) {
-				if var.get_depth() == 0 || self.subsumption_check(lits[i].id(), &mut marks, depth) {
+			if var.get_ante() != ::std::usize::MAX && var.get_depth() != self.depth {
+				if var.get_depth() == 0 || self.subsumption_check(lits[i].id(), &mut marks) {
 					lits.swap_remove(i);
 				} else {
 					i += 1;
@@ -235,17 +220,26 @@ impl Problem {
 		}
 	}
 
-	fn backjump(&mut self, target: usize) {
+	// backjump applications down to depth
+	fn backjump(&mut self) {
 		loop {
 			if self.applications.is_empty() {
 				break;
 			}
 			let ref mut var = self.variables[*self.applications.last().unwrap()];
-			if target == var.get_depth() {
+			if self.depth == var.get_depth() {
 				break;
 			}
 			var.unset();
 			self.applications.pop();
+		}
+	}
+
+	// resets depth to 0 and unsets all variables
+	fn restart(&mut self) {
+		self.depth = 0;
+		for id in self.applications.drain(..) {
+			self.variables[id].unset();
 		}
 	}
 
@@ -262,21 +256,21 @@ impl Problem {
 		}
 	}
 
-	fn choose(&self) -> usize {
-		self.variables
+	fn choose(&mut self) {
+		let choice = self.variables
 			.iter()
 			.enumerate()
-			.filter_map(|(i, ref var)| if !var.has_value() {
-				Some((i, var.q()))
-			} else {
-				None
-			})
-			.max_by(|&(_, ref a), &(_, ref b)| a.partial_cmp(b).unwrap())
+			.filter(|&(_, ref var)| !var.has_value())
+			.max_by(|&(_, ref a), &(_, ref b)| a.q().partial_cmp(b.q()).unwrap())
 			.unwrap()
-			.0
+			.0;
+		self.plays.push(choice);
+		self.depth += 1;
+		self.variables[choice].enable(self.depth);
+		self.applications.push(choice);
 	}
 
-	fn propagate(&mut self, depth: usize) -> Option<usize> {
+	fn propagate(&mut self) -> Option<usize> {
 		debug_assert!(!self.applications.is_empty());
 		let mut ai = self.applications.len() - 1;
 		while {
@@ -291,10 +285,10 @@ impl Problem {
 					super::clause::Apply::Unsat => return Some(cid),
 					super::clause::Apply::Unit(lit) => {
 						debug_assert!(!self.variables[lit.id()].has_value());
-						self.variables[lit.id()].set(!lit.negated(), depth, cid);
+						self.variables[lit.id()].set(!lit.negated(), self.depth, cid);
 						self.applications.push(lit.id());
 						self.plays.push(lit.id());
-						self.clauses[cid].update_glue(&mut self.variables, depth);
+						self.clauses[cid].update_glue(&mut self.variables, self.depth);
 					}
 				}
 				if let Some(&val) = self.variables[id].get_clauses(val).get(ci) {
@@ -315,9 +309,6 @@ impl Problem {
 		self.gc_count += 1;
 		//println!("[GC #{}]", self.gc_count);
 		//let old = self.clauses.len();
-		for id in self.applications.drain(..) {
-			self.variables[id].unset();
-		}
 		for var in self.variables.iter_mut() {
 			var.clear_watched();
 		}
