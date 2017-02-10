@@ -189,7 +189,7 @@ pub fn parse(reader: &mut BufRead) -> Result<Problem> {
 	for _ in 0..clauses {
 		parse_clause(reader, &mut builder)?;
 	}
-	if variables != builder.variable_count() {
+	if variables < builder.variable_count() {
 		bail!(ErrorKind::VariableCount(variables, builder.variable_count()));
 	}
 	// anything else in the file, we explicitly ignore
