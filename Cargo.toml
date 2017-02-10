@@ -18,7 +18,8 @@ error-chain = { version = "*" }
 git2 = { version = "*" }
 
 [dependencies]
-clap  = { version = "*" }
+bzip2 = { version = "*" }
+clap = { version = "*" }
 error-chain = { version = "*" }
 flate2 = { version = "*" }
 time = { version = "*" }
