@@ -60,16 +60,21 @@ impl fmt::Display for Literal {
 	}
 }
 
-#[test]
-fn literal_test1() {
-	let lit = Literal::new(42, true);
-	assert_eq!(lit.id(), 42);
-	assert_eq!(lit.negated(), true);
-}
+#[cfg(test)]
+mod tests {
+	use super::*;
 
-#[test]
-fn literal_test2() {
-	let lit = Literal::new(13, false);
-	assert_eq!(lit.id(), 13);
-	assert_eq!(lit.negated(), false);
+	#[test]
+	fn literal_test1() {
+		let lit = Literal::new(42, true);
+		assert_eq!(lit.id(), 42);
+		assert_eq!(lit.negated(), true);
+	}
+
+	#[test]
+	fn literal_test2() {
+		let lit = Literal::new(13, false);
+		assert_eq!(lit.id(), 13);
+		assert_eq!(lit.negated(), false);
+	}
 }
