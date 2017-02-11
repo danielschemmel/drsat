@@ -77,4 +77,32 @@ mod tests {
 		assert_eq!(lit.id(), 13);
 		assert_eq!(lit.negated(), false);
 	}
+
+	#[test]
+	fn literal_order1() {
+		let a = Literal::new(10, false);
+		let b = Literal::new(12, false);
+		assert!(a < b);
+		assert!(a <= b);
+		assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+		assert_eq!(a.partial_cmp(&a), Some(Ordering::Equal));
+		assert_eq!(b.partial_cmp(&a), Some(Ordering::Greater));
+		assert_eq!(a.cmp(&b), Ordering::Less);
+		assert_eq!(a.cmp(&a), Ordering::Equal);
+		assert_eq!(b.cmp(&a), Ordering::Greater);
+	}
+
+	#[test]
+	fn literal_order2() {
+		let a = Literal::new(400, false);
+		let b = Literal::new(400, true);
+		assert!(a < b);
+		assert!(a <= b);
+		assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+		assert_eq!(a.partial_cmp(&a), Some(Ordering::Equal));
+		assert_eq!(b.partial_cmp(&a), Some(Ordering::Greater));
+		assert_eq!(a.cmp(&b), Ordering::Less);
+		assert_eq!(a.cmp(&a), Ordering::Equal);
+		assert_eq!(b.cmp(&a), Ordering::Greater);
+	}
 }
