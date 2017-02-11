@@ -23,7 +23,7 @@ impl Literal {
 		(self.data >> 1, (self.data & 1) != 0)
 	}
 
-	pub fn print(&self, f: &mut fmt::Formatter, name: &str) -> fmt::Result {
+	pub fn print(&self, f: &mut fmt::Write, name: &str) -> fmt::Result {
 		if self.negated() {
 			write!(f, "¬{}", name)
 		} else {
