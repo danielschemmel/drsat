@@ -1,9 +1,10 @@
 use std::fs::File;
-use std::io::BufRead;
+use std::io::{BufRead, BufReader};
 
 use clap::{ArgMatches, Arg, App};
 use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
+use xz2::read::XzDecoder;
 
 use super::errors::*;
 use SolverResult;
@@ -79,11 +80,13 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 
 pub fn load(path: &str) -> Result<Box<BufRead>> {
 	let file = File::open(path)?;
-	if path.ends_with(".gz") {
-		Ok(Box::new(::std::io::BufReader::new(GzDecoder::new(file)?)))
-	} else if path.ends_with(".bz2") {
-		Ok(Box::new(::std::io::BufReader::new(BzDecoder::new(file))))
+	if path.ends_with(".bz2") {
+		Ok(Box::new(BufReader::new(BzDecoder::new(file))))
+	} else if path.ends_with(".gz") {
+		Ok(Box::new(BufReader::new(GzDecoder::new(file)?)))
+	} else if path.ends_with(".xz") {
+		Ok(Box::new(BufReader::new(XzDecoder::new(file))))
 	} else {
-		Ok(Box::new(::std::io::BufReader::new(file)))
+		Ok(Box::new(BufReader::new(file)))
 	}
 }

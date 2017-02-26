@@ -4,6 +4,7 @@ extern crate clap;
 extern crate error_chain;
 extern crate flate2;
 extern crate time;
+extern crate xz2;
 
 pub mod cnf;
 pub mod driver;
