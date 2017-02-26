@@ -24,7 +24,7 @@ pub struct Problem {
 }
 
 impl Problem {
-	pub fn new(names: Vec<String>, clauses: Vec<Vec<Literal>>) -> Problem {
+	pub fn new<T: ::std::fmt::Display>(names: Vec<T>, clauses: Vec<Vec<Literal>>) -> Problem {
 		let varcount = names.len();
 		let irreducible = clauses.len();
 		let mut last_conflict = Vec::new();
@@ -32,7 +32,7 @@ impl Problem {
 		let mut problem = Problem {
 			alpha: 0.4,
 			gc_count: 0,
-			variables: names.into_iter().map(Variable::new).collect(),
+			variables: names.into_iter().map(|x| Variable::new(x.to_string())).collect(),
 			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
 			applications: Vec::with_capacity(varcount),
 			irreducible: irreducible,

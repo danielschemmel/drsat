@@ -4,14 +4,16 @@ use super::Literal;
 use super::Problem;
 
 #[derive(Debug)]
-pub struct ProblemBuilder {
-	names2index: HashMap<String, usize>,
-	names: Vec<String>,
+pub struct ProblemBuilder<T: ::std::hash::Hash + ::std::cmp::Eq> {
+	names2index: HashMap<T, usize>,
+	names: Vec<T>,
 	clauses: Vec<Vec<Literal>>,
 }
 
-impl ProblemBuilder {
-	pub fn new() -> ProblemBuilder {
+impl<T> ProblemBuilder<T>
+    where T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone
+{
+	pub fn new() -> ProblemBuilder<T> {
 		ProblemBuilder {
 			names2index: HashMap::new(),
 			names: Vec::new(),
@@ -19,7 +21,7 @@ impl ProblemBuilder {
 		}
 	}
 
-	pub fn new_clause(&mut self) -> ClauseBuilder {
+	pub fn new_clause(&mut self) -> ClauseBuilder<T> {
 		self.clauses.push(Vec::new());
 		let clauses_len = self.clauses.len() - 1;
 		ClauseBuilder {
@@ -41,7 +43,7 @@ impl ProblemBuilder {
 		Problem::new(self.names, self.clauses)
 	}
 
-	fn variable_id(&mut self, name: String) -> usize {
+	fn variable_id(&mut self, name: T) -> usize {
 		match self.names2index.entry(name) {
 			Entry::Vacant(vacant_entry) => {
 				let id = self.names.len();
@@ -58,13 +60,17 @@ impl ProblemBuilder {
 	}
 }
 
-pub struct ClauseBuilder<'a> {
-	problembuilder: &'a mut ProblemBuilder,
+pub struct ClauseBuilder<'a, T: 'a>
+	where T: ::std::hash::Hash + ::std::cmp::Eq
+{
+	problembuilder: &'a mut ProblemBuilder<T>,
 	index: usize,
 }
 
-impl<'a> ClauseBuilder<'a> {
-	pub fn add_literal(&mut self, name: String, negated: bool) {
+impl<'a, T> ClauseBuilder<'a, T>
+    where T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone
+{
+	pub fn add_literal(&mut self, name: T, negated: bool) {
 		let id = self.problembuilder.variable_id(name);
 		self.problembuilder.clauses[self.index].push(Literal::new(id, negated));
 	}

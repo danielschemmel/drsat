@@ -4,6 +4,11 @@ use cnf::{Problem, ProblemBuilder};
 
 use super::errors::*;
 
+fn is_ws(byte: u8) -> bool {
+	let x = byte.wrapping_sub(9);
+	byte == b' ' || x < 5
+}
+
 fn skip_ws(reader: &mut BufRead) -> Result<()> {
 	loop {
 		let (skip, len) = {
@@ -12,7 +17,7 @@ fn skip_ws(reader: &mut BufRead) -> Result<()> {
 				return Ok(());
 			}
 
-			let skip_count = buf.iter().position(|&b| b != b' ' && b != b'\t' && b != b'\n' && b != b'\r');
+			let skip_count = buf.iter().position(|b| !is_ws(*b));
 			(skip_count.unwrap_or(buf.len()), buf.len())
 		};
 
@@ -123,7 +128,7 @@ fn parse_header(reader: &mut BufRead) -> Result<(usize, usize)> {
 	Ok((variables, clauses))
 }
 
-fn parse_variable(reader: &mut BufRead) -> Result<(String, bool)> {
+fn parse_variable(reader: &mut BufRead) -> Result<(usize, bool)> {
 	skip_ws(reader)?;
 	let neg = {
 		let buf = reader.fill_buf()?;
@@ -133,37 +138,15 @@ fn parse_variable(reader: &mut BufRead) -> Result<(String, bool)> {
 		reader.consume(1);
 		skip_ws(reader)?;
 	}
-	let mut name = String::new();
-	loop {
-		let (read, done) = {
-			let buf = reader.fill_buf()?;
-			if buf.len() == 0 {
-				(0, true)
-			} else {
-				let mut i: usize = 0;
-				while i < buf.len() && buf[i].wrapping_sub(b'0') <= 9 {
-					name.push(buf[i] as char);
-					i += 1;
-				}
-				(i, i < buf.len())
-			}
-		};
-		reader.consume(read);
-		if done {
-			return if name.len() > 0 {
-				Ok((name, neg))
-			} else {
-				Err(ErrorKind::ExpectedInt.into())
-			};
-		}
-	}
+	let name = parse_usize(reader)?;
+	Ok((name, neg))
 }
 
-fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder) -> Result<()> {
+fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder<usize>) -> Result<()> {
 	let mut clause = builder.new_clause();
 	loop {
 		let (name, neg) = parse_variable(reader)?;
-		if name == "0" {
+		if name == 0 {
 			break;
 		}
 		clause.add_literal(name, neg);
