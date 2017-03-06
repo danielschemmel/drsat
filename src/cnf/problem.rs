@@ -323,7 +323,8 @@ impl Problem {
 	}
 
 	pub fn print_model(&self, indent: &str) {
-		for var in self.variables.iter() { // FIXME: allow using &self.variables here
+		for var in self.variables.iter() {
+			// FIXME: allow using &self.variables here
 			debug_assert!(var.has_value());
 			println!("{}{}: {}", indent, var.name(), var.get_value());
 		}
