@@ -4,20 +4,20 @@ use std::io::{Error, Write};
 
 use util::Histo;
 
-use super::{Clause, Literal, Variable};
+use super::{Clause, Literal, Variable, VariableId, VariableVec};
 use SolverResult;
 
 #[derive(Debug)]
 pub struct Problem {
 	alpha: f64,
 	gc_count: u64,
-	variables: Vec<Variable>,
+	variables: VariableVec,
 	clauses: Vec<Clause>,
-	applications: Vec<usize>,
+	applications: Vec<VariableId>,
 	irreducible: usize,
 	num_conflicts: usize,
 	last_conflict: Vec<usize>,
-	plays: Vec<usize>,
+	plays: Vec<VariableId>,
 	depth: usize,
 	active_variables: usize,
 	conflict_lens: Histo,
@@ -32,7 +32,7 @@ impl Problem {
 		let mut problem = Problem {
 			alpha: 0.4,
 			gc_count: 0,
-			variables: names.into_iter().map(|x| Variable::new(x.to_string())).collect(),
+			variables: VariableVec::new(names.into_iter().map(|x| Variable::new(x.to_string())).collect()),
 			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
 			applications: Vec::with_capacity(varcount),
 			irreducible: irreducible,
@@ -48,14 +48,14 @@ impl Problem {
 	}
 
 	fn initialize(&mut self) {
-		let mut counters = Vec::<[HashMap<i32, usize>; 2]>::with_capacity(self.variables.len());
+		let mut counters = Vec::<[HashMap<i32, VariableId>; 2]>::with_capacity(self.variables.len() as usize);
 		for _ in 0..self.variables.len() {
 			counters.push([HashMap::new(), HashMap::new()]);
 		}
 		for i in 0..self.clauses.len() {
 			let len = self.clauses[i].len();
 			for (id, negated) in self.clauses[i].iter().map(|lit| lit.disassemble()) {
-				*counters[id][negated as usize].entry(len as i32).or_insert(0) += 1; // FIXME: this cast is only mostly safe
+				*counters[id as usize][negated as usize].entry(len as i32).or_insert(0) += 1; // FIXME: this cast is only mostly safe
 			}
 			self.clauses[i].initialize_watched(i, &mut self.variables);
 		}
@@ -70,8 +70,8 @@ impl Problem {
 				vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
 				vec.iter().sum()
 			};
-			self.variables[id].set_phase(lo < hi);
-			*self.variables[id].q_mut() = lo + hi;
+			self.variables[id as VariableId].set_phase(lo < hi);
+			*self.variables[id as VariableId].q_mut() = lo + hi;
 		}
 		let m: f64 = *self.variables.iter().map(|v| v.q()).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
 		for v in self.variables.iter_mut() {
@@ -116,12 +116,12 @@ impl Problem {
 	fn learn(&mut self, mut cid: usize) -> Vec<Literal> {
 		debug_assert!(self.depth > 0);
 		for lit in self.clauses[cid].iter() {
-			self.last_conflict[lit.id()] = self.num_conflicts;
+			self.last_conflict[lit.id() as usize] = self.num_conflicts;
 			debug_assert!(self.variables[lit.id()].has_value());
 		}
 		debug_assert!(self.clauses[cid].iter().map(|lit| self.variables[lit.id()].get_depth()).max().unwrap() == self.depth);
 		let mut marks = Vec::<bool>::new();
-		marks.resize(self.variables.len(), false);
+		marks.resize(self.variables.len() as usize, false);
 		let mut lits = Vec::<Literal>::new();
 		let mut queue = Vec::<usize>::with_capacity(self.clauses[cid].len());
 		let mut implicated = ::std::usize::MAX;
@@ -129,8 +129,8 @@ impl Problem {
 			for (id, negated) in self.clauses[cid].iter().map(|lit| lit.disassemble()) {
 				debug_assert!(self.variables[id].has_value());
 				debug_assert!(self.variables[id].get_depth() <= self.depth);
-				if !marks[id] {
-					marks[id] = true;
+				if !marks[id as usize] {
+					marks[id as usize] = true;
 					let d = self.variables[id].get_depth();
 					if d == self.depth {
 						let ante = self.variables[id].get_ante();
@@ -191,11 +191,11 @@ impl Problem {
 		}
 	}
 
-	fn subsumption_check(&self, vid: usize, marks: &mut Vec<bool>) -> bool {
+	fn subsumption_check(&self, vid: VariableId, marks: &mut Vec<bool>) -> bool {
 		for id in self.clauses[self.variables[vid].get_ante()].iter().map(|lit| lit.id()) {
-			if vid != id && !marks[id] && self.variables[id].get_depth() != 0 {
+			if vid != id && !marks[id as usize] && self.variables[id].get_depth() != 0 {
 				if self.variables[id].get_ante() != ::std::usize::MAX && self.subsumption_check(id, marks) {
-					marks[id] = true;
+					marks[id as usize] = true;
 				} else {
 					return false;
 				}
@@ -252,7 +252,7 @@ impl Problem {
 		let nalpha = 1.0 - self.alpha;
 		for id in self.plays.drain(..) {
 			let q = self.variables[id].q_mut();
-			*q = nalpha * *q + multiplier / ((self.num_conflicts - self.last_conflict[id] + 1) as f64);
+			*q = nalpha * *q + multiplier / ((self.num_conflicts - self.last_conflict[id as usize] + 1) as f64); // FIXME: explicit conversion is fugly
 		}
 	}
 
@@ -263,7 +263,7 @@ impl Problem {
 			.filter(|&(_, ref var)| !var.has_value())
 			.max_by(|&(_, ref a), &(_, ref b)| a.q().partial_cmp(b.q()).unwrap())
 			.unwrap()
-			.0;
+			.0 as VariableId; // FIXME: get rid of the conversion
 		self.plays.push(choice);
 		self.depth += 1;
 		self.variables[choice].enable(self.depth);
@@ -323,7 +323,7 @@ impl Problem {
 	}
 
 	pub fn print_model(&self, indent: &str) {
-		for var in &self.variables {
+		for var in self.variables.iter() { // FIXME: allow using &self.variables here
 			debug_assert!(var.has_value());
 			println!("{}{}: {}", indent, var.name(), var.get_value());
 		}

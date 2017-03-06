@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use super::Literal;
-use super::Problem;
+use super::{Literal, Problem, VariableId};
 
 #[derive(Debug)]
 pub struct ProblemBuilder<T: ::std::hash::Hash + ::std::cmp::Eq> {
-	names2index: HashMap<T, usize>,
+	names2index: HashMap<T, VariableId>,
 	names: Vec<T>,
 	clauses: Vec<Vec<Literal>>,
 }
@@ -43,10 +42,10 @@ impl<T> ProblemBuilder<T>
 		Problem::new(self.names, self.clauses)
 	}
 
-	fn variable_id(&mut self, name: T) -> usize {
+	fn variable_id(&mut self, name: T) -> VariableId {
 		match self.names2index.entry(name) {
 			Entry::Vacant(vacant_entry) => {
-				let id = self.names.len();
+				let id = self.names.len() as VariableId;
 				self.names.push(vacant_entry.key().clone());
 				vacant_entry.insert(id);
 				id

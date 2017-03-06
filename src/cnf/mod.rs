@@ -12,3 +12,6 @@ pub use self::problembuilder::ProblemBuilder;
 
 pub mod variable;
 pub use self::variable::Variable;
+
+mod variable_vec;
+pub use self::variable_vec::{VariableId, VariableVec};

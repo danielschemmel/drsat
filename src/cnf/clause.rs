@@ -1,5 +1,5 @@
 use std::fmt;
-use super::{Literal, Variable};
+use super::{Literal, VariableId, VariableVec};
 
 #[derive(Debug)]
 pub struct Clause {
@@ -23,7 +23,7 @@ impl Clause {
 		}
 	}
 
-	pub fn from_learned(mut literals: Vec<Literal>, variables: &[Variable], max_depth: usize) -> (usize, Literal, Clause) {
+	pub fn from_learned(mut literals: Vec<Literal>, variables: &VariableVec, max_depth: usize) -> (usize, Literal, Clause) {
 		literals.sort();
 		let mut marks = Vec::<bool>::new();
 		marks.resize(max_depth + 1, false);
@@ -62,7 +62,7 @@ impl Clause {
 		self.literals.iter()
 	}
 
-	pub fn print(&self, f: &mut fmt::Formatter, variables: &[Variable]) -> fmt::Result {
+	pub fn print(&self, f: &mut fmt::Formatter, variables: &VariableVec) -> fmt::Result {
 		for (i, literal) in self.literals.iter().enumerate() {
 			if i != 0 {
 				write!(f, " ")?;
@@ -72,7 +72,7 @@ impl Clause {
 		Ok(())
 	}
 
-	pub fn update_glue(&mut self, variables: &[Variable], max_depth: usize) {
+	pub fn update_glue(&mut self, variables: &VariableVec, max_depth: usize) {
 		if self.glue <= 2 {
 			return;
 		}
@@ -103,7 +103,7 @@ impl Clause {
 
 	/// The idea of this function is to distribute the (initial) watch list effort
 	/// fairly over all variables
-	pub fn initialize_watched(&mut self, cid: usize, variables: &mut Vec<Variable>) {
+	pub fn initialize_watched(&mut self, cid: usize, variables: &mut VariableVec) {
 		self.literals.sort();
 		let mut a: usize = 0;
 		let mut sa = ::std::usize::MAX;
@@ -127,7 +127,7 @@ impl Clause {
 		self.notify_watched(cid, variables);
 	}
 
-	pub fn notify_watched(&self, cid: usize, variables: &mut Vec<Variable>) {
+	pub fn notify_watched(&self, cid: usize, variables: &mut VariableVec) {
 		let lit0 = self.literals[self.watched[0]];
 		if !variables[lit0.id()].has_value() || variables[lit0.id()].get_depth() != 0 {
 			variables[lit0.id()].watch(cid, lit0.negated());
@@ -136,11 +136,11 @@ impl Clause {
 		}
 	}
 
-	pub fn is_watched(&self, id: usize) -> bool {
+	pub fn is_watched(&self, id: VariableId) -> bool {
 		self.literals[self.watched[0]].id() == id || self.literals[self.watched[1]].id() == id
 	}
 
-	pub fn apply(&mut self, cid: usize, variables: &mut Vec<Variable>) -> Apply {
+	pub fn apply(&mut self, cid: usize, variables: &mut VariableVec) -> Apply {
 		let mut lit0 = self.literals[self.watched[0]];
 		if let Some(val) = variables[lit0.id()].value() {
 			if lit0.negated() != val {
@@ -217,7 +217,7 @@ impl Clause {
 		}
 	}
 
-	fn percolate_sat(&mut self, cid: usize, variables: &mut Vec<Variable>, start: usize, mut pos: usize, lit: Literal) {
+	fn percolate_sat(&mut self, cid: usize, variables: &mut VariableVec, start: usize, mut pos: usize, lit: Literal) {
 		let mut mind = variables[lit.id()].get_depth();
 		let mut i = pos;
 		loop {

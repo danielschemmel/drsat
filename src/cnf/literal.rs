@@ -1,17 +1,19 @@
 use std::cmp::Ordering;
 use std::fmt;
+use super::VariableId;
 
 #[derive(Debug, Copy, Clone, Eq)]
 pub struct Literal {
-	data: usize,
+	data: VariableId,
 }
 
 impl Literal {
-	pub fn new(id: usize, negated: bool) -> Literal {
-		Literal { data: (id << 1) | (negated as usize) }
+	pub fn new(id: VariableId, negated: bool) -> Literal {
+		debug_assert!(id.wrapping_shl(1) >> 1 == id);
+		Literal { data: (id << 1) | (negated as VariableId) }
 	}
 
-	pub fn id(&self) -> usize {
+	pub fn id(&self) -> VariableId {
 		self.data >> 1
 	}
 
@@ -19,7 +21,7 @@ impl Literal {
 		(self.data & 1) != 0
 	}
 
-	pub fn disassemble(&self) -> (usize, bool) {
+	pub fn disassemble(&self) -> (VariableId, bool) {
 		(self.data >> 1, (self.data & 1) != 0)
 	}
 
