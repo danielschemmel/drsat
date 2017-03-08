@@ -3,10 +3,7 @@ use clap::{App, Arg, ArgMatches, Shell};
 use super::errors::*;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
-	app.about("Generate completion scripts for various shells")
-		.arg(gen_arg()
-			.required(true)
-			.index(1))
+	app.about("Generate completion scripts for various shells").arg(gen_arg().required(true).index(1))
 }
 
 pub fn gen_arg() -> Arg<'static, 'static> {

@@ -73,7 +73,11 @@ impl Problem {
 			self.variables[id as VariableId].set_phase(lo < hi);
 			*self.variables[id as VariableId].q_mut() = lo + hi;
 		}
-		let m: f64 = *self.variables.iter().map(|v| v.q()).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+		let m: f64 = *self.variables
+		                  .iter()
+		                  .map(|v| v.q())
+		                  .max_by(|a, b| a.partial_cmp(b).unwrap())
+		                  .unwrap();
 		for v in self.variables.iter_mut() {
 			*v.q_mut() /= m;
 		}
@@ -119,7 +123,11 @@ impl Problem {
 			self.last_conflict[lit.id() as usize] = self.num_conflicts;
 			debug_assert!(self.variables[lit.id()].has_value());
 		}
-		debug_assert!(self.clauses[cid].iter().map(|lit| self.variables[lit.id()].get_depth()).max().unwrap() == self.depth);
+		debug_assert!(self.clauses[cid]
+		                  .iter()
+		                  .map(|lit| self.variables[lit.id()].get_depth())
+		                  .max()
+		                  .unwrap() == self.depth);
 		let mut marks = Vec::<bool>::new();
 		marks.resize(self.variables.len() as usize, false);
 		let mut lits = Vec::<Literal>::new();
@@ -183,8 +191,14 @@ impl Problem {
 			debug_assert!(self.variables[lit.id()].has_value());
 			debug_assert!(self.variables[lit.id()].get_depth() == self.depth);
 			self.backjump();
-			self.conflict_lens.add(self.clauses.last().unwrap().len() - 1);
-			self.clauses.last().unwrap().notify_watched(self.clauses.len() - 1, &mut self.variables);
+			self.conflict_lens.add(self.clauses
+			                           .last()
+			                           .unwrap()
+			                           .len() - 1);
+			self.clauses
+				.last()
+				.unwrap()
+				.notify_watched(self.clauses.len() - 1, &mut self.variables);
 			self.variables[lit.id()].set(!lit.negated(), self.depth, self.clauses.len() - 1);
 			self.applications.push(lit.id());
 			self.propagate()
@@ -274,34 +288,34 @@ impl Problem {
 		debug_assert!(!self.applications.is_empty());
 		let mut ai = self.applications.len() - 1;
 		while {
-			let id = self.applications[ai];
-			debug_assert!(self.variables[id].has_value());
-			let val = self.variables[id].get_value();
-			let mut ci: usize = 0;
-			while ci < self.variables[id].get_clauses(val).len() {
-				let cid = self.variables[id].get_clauses(val)[ci];
-				match self.clauses[cid].apply(cid, &mut self.variables) {
-					super::clause::Apply::Continue => {}
-					super::clause::Apply::Unsat => return Some(cid),
-					super::clause::Apply::Unit(lit) => {
-						debug_assert!(!self.variables[lit.id()].has_value());
-						self.variables[lit.id()].set(!lit.negated(), self.depth, cid);
-						self.applications.push(lit.id());
-						self.plays.push(lit.id());
-						self.clauses[cid].update_glue(&mut self.variables, self.depth);
-					}
+			      let id = self.applications[ai];
+			      debug_assert!(self.variables[id].has_value());
+			      let val = self.variables[id].get_value();
+			      let mut ci: usize = 0;
+			      while ci < self.variables[id].get_clauses(val).len() {
+				      let cid = self.variables[id].get_clauses(val)[ci];
+				      match self.clauses[cid].apply(cid, &mut self.variables) {
+				          super::clause::Apply::Continue => {}
+				          super::clause::Apply::Unsat => return Some(cid),
+				          super::clause::Apply::Unit(lit) => {
+					debug_assert!(!self.variables[lit.id()].has_value());
+					self.variables[lit.id()].set(!lit.negated(), self.depth, cid);
+					self.applications.push(lit.id());
+					self.plays.push(lit.id());
+					self.clauses[cid].update_glue(&mut self.variables, self.depth);
 				}
-				if let Some(&val) = self.variables[id].get_clauses(val).get(ci) {
-					if val == cid {
-						ci += 1;
-					}
-				} else {
-					break;
-				}
-			}
-			ai += 1;
-			ai < self.applications.len()
-		} {}
+				      }
+				      if let Some(&val) = self.variables[id].get_clauses(val).get(ci) {
+					      if val == cid {
+						      ci += 1;
+						     }
+					     } else {
+					      break;
+					     }
+				     }
+			      ai += 1;
+			      ai < self.applications.len()
+			     } {}
 		None
 	}
 

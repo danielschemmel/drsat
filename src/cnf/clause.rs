@@ -52,9 +52,9 @@ impl Clause {
 		(db,
 		 lit,
 		 Clause {
-			 literals: literals,
-			 watched: [pa, pb],
-			 glue: glue,
+		     literals: literals,
+		     watched: [pa, pb],
+		     glue: glue,
 		 })
 	}
 
