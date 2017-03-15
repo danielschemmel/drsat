@@ -69,9 +69,10 @@ pub struct ClauseBuilder<'a, T: 'a>
 impl<'a, T> ClauseBuilder<'a, T>
     where T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone
 {
-	pub fn add_literal(&mut self, name: T, negated: bool) {
+	pub fn add_literal(&mut self, name: T, negated: bool) -> &mut Self {
 		let id = self.problembuilder.variable_id(name);
 		self.problembuilder.clauses[self.index].push(Literal::new(id, negated));
+		self
 	}
 
 	pub fn len(&self) -> usize {
