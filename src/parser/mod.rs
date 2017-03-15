@@ -1,4 +1,5 @@
 pub mod dimacs;
+pub mod npn;
 
 pub mod errors {
 	error_chain! {

@@ -16,6 +16,7 @@ fn gen_cli() -> App<'static, 'static> {
 		.setting(AppSettings::GlobalVersion)
 		.setting(AppSettings::SubcommandRequiredElseHelp)
 		.subcommand(driver::dimacs::setup_command(SubCommand::with_name("dimacs")))
+		.subcommand(driver::npn::setup_command(SubCommand::with_name("npn")))
 		.subcommand(driver::stats::setup_command(SubCommand::with_name("stats")))
 		.subcommand(driver::completion::setup_command(SubCommand::with_name("completion")))
 		.subcommand(SubCommand::with_name("version").about("Prints version information"))
