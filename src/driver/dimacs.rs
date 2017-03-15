@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-use clap::{ArgMatches, Arg, App};
+use clap::{ArgMatches, Arg, App, AppSettings};
 use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
 use xz2::read::XzDecoder;
@@ -11,6 +11,7 @@ use SolverResult;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Parse and solve a dimacs file")
+		.setting(AppSettings::ColoredHelp)
 		.arg(Arg::with_name("path")
 		         .required(true)
 		         .index(1)

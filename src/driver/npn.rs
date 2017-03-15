@@ -1,12 +1,13 @@
 use std::io::BufReader;
 
-use clap::{ArgMatches, Arg, App};
+use clap::{ArgMatches, Arg, App, AppSettings};
 
 use super::errors::*;
 use SolverResult;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Parse and solve a npn query")
+		.setting(AppSettings::ColoredHelp)
 		.arg(Arg::with_name("query")
 		         .required(true)
 		         .index(1)
@@ -44,8 +45,8 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	match result {
 		SolverResult::Sat => {
 			println!("Result: Satisfiable");
-				println!("Model:");
-				problem.print_model("  ");
+			println!("Model:");
+			problem.print_model("  ");
 		}
 		SolverResult::Unsat => println!("Result: Unsatisfiable"),
 		SolverResult::Unknown => println!("Result: Unknown"),
