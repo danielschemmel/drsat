@@ -189,7 +189,6 @@ impl Problem {
 			self.depth = backtrack;
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id()].has_value());
-			debug_assert!(self.variables[lit.id()].get_depth() == self.depth);
 			self.backjump();
 			self.conflict_lens.add(self.clauses
 			                           .last()
