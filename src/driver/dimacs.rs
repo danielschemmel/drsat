@@ -1,13 +1,8 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-
 use clap::{ArgMatches, Arg, App, AppSettings};
-use bzip2::read::BzDecoder;
-use flate2::read::GzDecoder;
-use xz2::read::XzDecoder;
 
 use super::errors::*;
 use SolverResult;
+use io::open_file;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Parse and solve a dimacs file")
@@ -29,7 +24,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	let mut sw = ::util::Stopwatch::new();
 
 	sw.start();
-	let mut reader = load(path).chain_err(|| ErrorKind::Parse(path.into()))?;
+	let mut reader = open_file(path).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Opening file: {}", sw);
@@ -69,17 +64,4 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	}
 
 	Ok(())
-}
-
-pub fn load(path: &str) -> Result<Box<BufRead>> {
-	let file = File::open(path)?;
-	if path.ends_with(".bz2") {
-		Ok(Box::new(BufReader::new(BzDecoder::new(file))))
-	} else if path.ends_with(".gz") {
-		Ok(Box::new(BufReader::new(GzDecoder::new(file)?)))
-	} else if path.ends_with(".xz") {
-		Ok(Box::new(BufReader::new(XzDecoder::new(file))))
-	} else {
-		Ok(Box::new(BufReader::new(file)))
-	}
 }

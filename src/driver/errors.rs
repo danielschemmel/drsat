@@ -2,8 +2,11 @@ use std::io;
 use std::io::Write;
 
 error_chain! {
+	links {
+		Io(::io::errors::Error, ::io::errors::ErrorKind);
+	}
 	foreign_links {
-		Io(::std::io::Error);
+		RawIo(io::Error);
 	}
 	errors {
 		Parse(path: String) {
@@ -22,6 +25,7 @@ impl Error {
 		match self.kind() {
 			&ErrorKind::Parse(_) => 2,
 			&ErrorKind::Io(_) => 100,
+			&ErrorKind::RawIo(_) => 100,
 			&ErrorKind::Msg(_) => 127,
 		}
 	}

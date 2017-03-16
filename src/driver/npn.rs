@@ -1,9 +1,8 @@
-use std::io::BufReader;
-
 use clap::{ArgMatches, Arg, App, AppSettings};
 
 use super::errors::*;
 use SolverResult;
+use io::open_string;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Parse and solve a npn query")
@@ -19,8 +18,7 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 }
 
 pub fn main(matches: &ArgMatches) -> Result<()> {
-	let query = matches.value_of("query").unwrap();
-	let mut reader = BufReader::new(query.as_bytes());
+	let mut reader = open_string(matches.value_of("query").unwrap())?;
 	let time = matches.is_present("time");
 	let mut sw = ::util::Stopwatch::new();
 

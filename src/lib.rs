@@ -9,6 +9,7 @@ extern crate xz2;
 pub mod cnf;
 pub mod driver;
 pub mod gp;
+pub mod io;
 pub mod parser;
 pub mod util;
 
