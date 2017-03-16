@@ -8,19 +8,23 @@ pub struct Literal {
 }
 
 impl Literal {
+	#[inline]
 	pub fn new(id: VariableId, negated: bool) -> Literal {
 		debug_assert!(id.wrapping_shl(1) >> 1 == id);
 		Literal { data: (id << 1) | (negated as VariableId) }
 	}
 
+	#[inline]
 	pub fn id(&self) -> VariableId {
 		self.data >> 1
 	}
 
+	#[inline]
 	pub fn negated(&self) -> bool {
 		(self.data & 1) != 0
 	}
 
+	#[inline]
 	pub fn disassemble(&self) -> (VariableId, bool) {
 		(self.data >> 1, (self.data & 1) != 0)
 	}
@@ -41,12 +45,14 @@ impl Ord for Literal {
 }
 
 impl PartialOrd for Literal {
+	#[inline]
 	fn partial_cmp(&self, other: &Literal) -> Option<Ordering> {
 		Some(self.cmp(other))
 	}
 }
 
 impl PartialEq for Literal {
+	#[inline]
 	fn eq(&self, other: &Literal) -> bool {
 		self.data == other.data
 	}

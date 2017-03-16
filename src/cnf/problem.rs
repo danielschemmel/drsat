@@ -294,15 +294,16 @@ impl Problem {
 				      let mut ci: usize = 0;
 				      let mut cid = self.variables[id].get_clauses(val)[ci];
 				      loop {
-					      match self.clauses[cid].apply(cid, &mut self.variables) {
+					      let clause = &mut self.clauses[cid];
+					      match clause.apply(cid, &mut self.variables) {
 					          super::clause::Apply::Continue => {}
 					          super::clause::Apply::Unsat => return Some(cid),
 					          super::clause::Apply::Unit(lit) => {
 						debug_assert!(!self.variables[lit.id()].has_value());
 						self.variables[lit.id()].set(!lit.negated(), self.depth, cid);
+						clause.update_glue(&mut self.variables, self.depth);
 						self.applications.push(lit.id());
 						self.plays.push(lit.id());
-						self.clauses[cid].update_glue(&mut self.variables, self.depth);
 					}
 					      }
 					      let clauses = &self.variables[id].get_clauses(val);
