@@ -6,7 +6,7 @@ error_chain! {
 		Io(::io::errors::Error, ::io::errors::ErrorKind);
 	}
 	foreign_links {
-		RawIo(io::Error);
+		RawIo(io::Error); // FIXME
 	}
 	errors {
 		Parse(path: String) {
