@@ -286,46 +286,50 @@ impl Problem {
 	fn propagate(&mut self) -> Option<usize> {
 		debug_assert!(!self.applications.is_empty());
 		let mut ai = self.applications.len() - 1;
-		while {
-			      let id = self.applications[ai];
-			      debug_assert!(self.variables[id].has_value());
-			      let val = self.variables[id].get_value();
-			      if 0 != self.variables[id].get_clauses(val).len() {
-				      let mut ci: usize = 0;
-				      let mut cid = self.variables[id].get_clauses(val)[ci];
-				      loop {
-					      let clause = &mut self.clauses[cid];
-					      match clause.apply(cid, &mut self.variables) {
-					          super::clause::Apply::Continue => {}
-					          super::clause::Apply::Unsat => return Some(cid),
-					          super::clause::Apply::Unit(lit) => {
-						debug_assert!(!self.variables[lit.id()].has_value());
-						self.variables[lit.id()].set(!lit.negated(), self.depth, cid);
-						clause.update_glue(&mut self.variables, self.depth);
-						self.applications.push(lit.id());
-						self.plays.push(lit.id());
+		let mut id = self.applications[ai];
+		loop {
+			debug_assert!(self.variables[id].has_value());
+			let val = self.variables[id].get_value();
+			if 0 != self.variables[id].get_clauses(val).len() {
+				let mut ci: usize = 0;
+				let mut cid = self.variables[id].get_clauses(val)[ci];
+				loop {
+					let clause = &mut self.clauses[cid];
+					match clause.apply(cid, &mut self.variables) {
+						super::clause::Apply::Continue => {}
+						super::clause::Apply::Unsat => return Some(cid),
+						super::clause::Apply::Unit(lit) => {
+							debug_assert!(!self.variables[lit.id()].has_value());
+							self.variables[lit.id()].set(!lit.negated(), self.depth, cid);
+							clause.update_glue(&mut self.variables, self.depth);
+							self.applications.push(lit.id());
+							self.plays.push(lit.id());
+						}
 					}
-					      }
-					      let clauses = &self.variables[id].get_clauses(val);
-					      if let Some(&val) = clauses.get(ci) {
-						      if val == cid {
-							      ci += 1;
-							      if let Some(&val) = clauses.get(ci) {
-								      cid = val;
-								     } else {
-								      break;
-								     }
-							     } else {
-							      cid = val;
-							     }
-						     } else {
-						      break;
-						     }
-					     }
-				     }
-			      ai += 1;
-			      ai < self.applications.len()
-			     } {}
+					let clauses = &self.variables[id].get_clauses(val);
+					if let Some(&val) = clauses.get(ci) {
+						if val == cid {
+							ci += 1;
+							if let Some(&val) = clauses.get(ci) {
+								cid = val;
+							} else {
+								break;
+							}
+						} else {
+							cid = val;
+						}
+					} else {
+						break;
+					}
+				}
+			}
+			ai += 1;
+			if let Some(&val) = self.applications.get(ai) {
+				id = val;
+			} else {
+				break;
+			}
+		}
 		None
 	}
 
