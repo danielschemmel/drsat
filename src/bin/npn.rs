@@ -13,7 +13,7 @@ fn gen_cli() -> App<'static, 'static> {
 	                               .about("Solve a npn query, as used for the student programming task")
 	                               .setting(AppSettings::ColoredHelp)
 	                               .setting(AppSettings::GlobalVersion))
-			.arg(driver::completion::gen_arg().conflicts_with("path").long("completion"))
+			.arg(driver::completion::gen_arg().conflicts_with("query").long("completion"))
 }
 
 fn run() -> Result<()> {
