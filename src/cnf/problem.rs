@@ -292,8 +292,8 @@ impl Problem {
 			      let val = self.variables[id].get_value();
 			      if 0 != self.variables[id].get_clauses(val).len() {
 				      let mut ci: usize = 0;
+				      let mut cid = self.variables[id].get_clauses(val)[ci];
 				      loop {
-					      let cid = self.variables[id].get_clauses(val)[ci];
 					      match self.clauses[cid].apply(cid, &mut self.variables) {
 					          super::clause::Apply::Continue => {}
 					          super::clause::Apply::Unsat => return Some(cid),
@@ -309,9 +309,13 @@ impl Problem {
 					      if let Some(&val) = clauses.get(ci) {
 						      if val == cid {
 							      ci += 1;
-							      if ci >= clauses.len() {
+							      if let Some(&val) = clauses.get(ci) {
+								      cid = val;
+								     } else {
 								      break;
 								     }
+							     } else {
+							      cid = val;
 							     }
 						     } else {
 						      break;
