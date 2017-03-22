@@ -7,6 +7,7 @@ error_chain! {
 	}
 	foreign_links {
 		RawIo(io::Error); // FIXME
+		ParseInt(::std::num::ParseIntError);
 	}
 	errors {
 		Parse(path: String) {
@@ -24,6 +25,7 @@ impl Error {
 	pub fn code(&self) -> i32 {
 		match self.kind() {
 			&ErrorKind::Parse(_) => 2,
+			&ErrorKind::ParseInt(_) => 2,
 			&ErrorKind::Io(_) => 100,
 			&ErrorKind::RawIo(_) => 100,
 			&ErrorKind::Msg(_) => 127,

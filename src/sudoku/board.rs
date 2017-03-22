@@ -1,4 +1,6 @@
-use cnf::ProblemBuilder;
+use std::io;
+
+use cnf::{Problem, ProblemBuilder};
 use SolverResult;
 
 pub struct Board {
@@ -76,31 +78,105 @@ impl Board {
 	}
 
 	pub fn deduce(&mut self) {
-		unimplemented!();
+		loop {
+			let mut found = false;
+			for row in 0..self.count {
+				for col in 0..self.count {
+					let mut v = 0;
+					let mut c = 0;
+					for x in 0..self.count {
+						if self.data[row * self.count * self.count + col * self.count + x] {
+							v = x;
+							c += 1;
+						}
+					}
+					if c == 1 {
+						for c2 in (0..self.count).filter(|&x| x != col) {
+							if self.data[row * self.count * self.count + c2 * self.count + v] {
+								self.data[row * self.count * self.count + c2 * self.count + v] = false;
+								found = true;
+							}
+						}
+						for r2 in (0..self.count).filter(|&x| x != row) {
+							if self.data[r2 * self.count * self.count + col * self.count + v] {
+								self.data[r2 * self.count * self.count + col * self.count + v] = false;
+								found = true;
+							}
+						}
+					}
+				}
+			}
+			if !found {
+				break;
+			}
+		}
 	}
 
-	pub fn solve(&mut self) -> Option<Vec<usize>> {
+	fn create_problem(&self) -> Option<Problem<usize>> {
 		let mut pb = ProblemBuilder::new();
 
 		// each cell must contain one of the possbilities
 		for i in 0..(self.count * self.count) {
 			let mut cb = pb.new_clause();
 			for j in 0..self.count {
-				if self.data[i * self.count + j] {
-					cb.add_literal(i * self.count + j, false);
+				let offset = i * self.count + j;
+				if self.data[offset] {
+					cb.add_literal(offset, false);
 				}
 			}
 			if cb.len() == 0 {
-				// shortcut: if no possibilities exist, we can simply leave
 				return None;
 			}
 		}
 
-		// notify which possibilities do not exist
-		for i in 0..(self.count * self.count) {
-			for j in 0..self.count {
-				if !self.data[i * self.count + j] {
-					pb.new_clause().add_literal(i * self.count + j, true);
+		// each column must contain one of each values
+		for col in 0..self.count {
+			for val in 0..self.count {
+				let mut cb = pb.new_clause();
+				for row in 0..self.count {
+					let offset = row * self.count * self.count + col * self.count + val;
+					if self.data[offset] {
+						cb.add_literal(offset, false);
+					}
+				}
+				if cb.len() == 0 {
+					return None;
+				}
+			}
+		}
+
+		// each row must contain one of each values
+		for row in 0..self.count {
+			for val in 0..self.count {
+				let mut cb = pb.new_clause();
+				for col in 0..self.count {
+					let offset = row * self.count * self.count + col * self.count + val;
+					if self.data[offset] {
+						cb.add_literal(offset, false);
+					}
+				}
+				if cb.len() == 0 {
+					return None;
+				}
+			}
+		}
+
+		// each block must contain one of each values
+		for x in 0..self.rows {
+			for y in 0..self.cols {
+				for val in 0..self.count {
+					let mut cb = pb.new_clause();
+					for a in 0..self.rows {
+						for b in 0..self.cols {
+							let offset = (x * self.cols + b) * self.count * self.count + (y * self.rows + a) * self.count + val;
+							if self.data[offset] {
+								cb.add_literal(offset, false);
+							}
+						}
+					}
+					if cb.len() == 0 {
+						return None;
+					}
 				}
 			}
 		}
@@ -118,45 +194,11 @@ impl Board {
 			}
 		}
 
-		// each column must contain one of each values
-		for col in 0..self.count {
-			for val in 0..self.count {
-				let mut cb = pb.new_clause();
-				for row in 0..self.count {
-					cb.add_literal(row * self.count * self.count + col * self.count + val,
-					               false);
-				}
-			}
-		}
+		Some(pb.as_problem())
+	}
 
-		// each row must contain one of each values
-		for row in 0..self.count {
-			for val in 0..self.count {
-				let mut cb = pb.new_clause();
-				for col in 0..self.count {
-					cb.add_literal(row * self.count * self.count + col * self.count + val,
-					               false);
-				}
-			}
-		}
-
-		// each block must contain one of each values
-		for x in 0..self.rows {
-			for y in 0..self.cols {
-				for val in 0..self.count {
-					let mut cb = pb.new_clause();
-					for a in 0..self.rows {
-						for b in 0..self.cols {
-							cb.add_literal((x * self.cols + b) * self.count * self.count + (y * self.rows + a) * self.count + val,
-							               false);
-						}
-					}
-				}
-			}
-		}
-
-		let mut problem = pb.as_problem();
-		match problem.solve() {
+	pub fn solve(&self) -> Option<Vec<usize>> {
+		self.create_problem().and_then(|mut problem| match problem.solve() {
 			SolverResult::Unsat => {
 				return None;
 			}
@@ -171,11 +213,22 @@ impl Board {
 				for t in model.iter().filter(|t| t.1 == true) {
 					debug_assert_eq!(t.1, true);
 					debug_assert_eq!(solution[*t.0 / self.count], 0);
-					print!("{} ", *t.0);
 					solution[*t.0 / self.count] = *t.0 % self.count + 1;
 				}
 				return Some(solution);
 			}
+		})
+	}
+
+	pub fn print_dimacs(&self, writer: &mut io::Write) -> io::Result<()> {
+		let problem = self.create_problem(); // FIXME: the model is generated twice...
+		if let Some(problem) = problem {
+			problem.print_dimacs(writer)
+		} else {
+			writeln!(writer, "p cnf 2 1")?;
+			writeln!(writer, "1 0")?;
+			writeln!(writer, "-1 0")?;
+			writeln!(writer, "0")
 		}
 	}
 }

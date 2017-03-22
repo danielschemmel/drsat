@@ -8,11 +8,11 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Parse and solve a dimacs file")
 		.setting(AppSettings::ColoredHelp)
 		.arg(Arg::with_name("path")
-		         .required(true)
-		         .index(1)
-		         .takes_value(true)
-		         .value_name("PATH")
-		         .help("The path to the dimacs file"))
+			.required(true)
+			.index(1)
+			.takes_value(true)
+			.value_name("FILE")
+			.help("The path to the dimacs file"))
 		.arg(Arg::with_name("time").short("t").long("time").help("Time the solving process"))
 		.arg(Arg::with_name("model").short("m").long("model").help("Print a model for satisfying results"))
 		.arg(Arg::with_name("preprocess").short("p").long("Dump a new dimacs file after preprocessing (note: this does not preserve names!)").help(""))
@@ -37,7 +37,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 		println!("[T] Parsing and preprocessing file: {}", sw);
 	}
 	if matches.is_present("preprocess") {
-		problem.print_dimacs();
+		problem.print_dimacs(&mut ::std::io::stdout())?;
 	}
 
 	sw.start();

@@ -175,11 +175,11 @@ impl<T: fmt::Display> Problem<T> {
 			}
 		}
 		let m: f64 = *self.variables
-		                  .iter()
-											.filter(|var| !var.has_value())
-		                  .map(|v| v.q())
-		                  .max_by(|a, b| a.partial_cmp(b).unwrap())
-		                  .unwrap();
+			.iter()
+			.filter(|var| !var.has_value())
+			.map(|v| v.q())
+			.max_by(|a, b| a.partial_cmp(b).unwrap())
+			.unwrap();
 		for v in self.variables.iter_mut() {
 			*v.q_mut() /= m;
 		}
@@ -229,10 +229,10 @@ impl<T: fmt::Display> Problem<T> {
 			debug_assert!(self.variables[lit.id()].has_value());
 		}
 		debug_assert!(self.clauses[cid]
-		                  .iter()
-		                  .map(|lit| self.variables[lit.id()].get_depth())
-		                  .max()
-		                  .unwrap() == self.depth);
+			.iter()
+			.map(|lit| self.variables[lit.id()].get_depth())
+			.max()
+			.unwrap() == self.depth);
 		let mut marks = Vec::<bool>::new();
 		marks.resize(self.variables.len() as usize, false);
 		let mut lits = Vec::<Literal>::new();
@@ -296,9 +296,9 @@ impl<T: fmt::Display> Problem<T> {
 			debug_assert!(self.variables[lit.id()].has_value());
 			self.backjump();
 			self.conflict_lens.add(self.clauses
-			                           .last()
-			                           .unwrap()
-			                           .len() - 1);
+				.last()
+				.unwrap()
+				.len() - 1);
 			self.clauses
 				.last()
 				.unwrap()
@@ -501,17 +501,21 @@ impl<T: fmt::Display> Problem<T> {
 		println!("  of total complexity {}", x);
 	}
 
-	pub fn print_dimacs(&self) {
-		println!("p cnf {} {}", self.variables.len(), self.clauses.len());
+	pub fn print_dimacs(&self, writer: &mut io::Write) -> io::Result<()> {
+		writeln!(writer,
+		         "p cnf {} {}",
+		         self.variables.len(),
+		         self.clauses.len())?;
 		for clause in self.clauses.iter() {
 			for lit in clause.iter() {
 				if lit.negated() {
-					print!("-");
+					write!(writer, "-")?;
 				}
-				print!("{} ", lit.id() + 1);
+				write!(writer, "{} ", lit.id() + 1)?;
 			}
-			println!("0");
+			writeln!(writer, "0")?;
 		}
+		Ok(())
 	}
 }
 

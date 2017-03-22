@@ -53,9 +53,9 @@ impl Clause {
 		(db,
 		 lit,
 		 Clause {
-		     literals: literals,
-		     watched: [pa, pb],
-		     glue: glue,
+			 literals: literals,
+			 watched: [pa, pb],
+			 glue: glue,
 		 })
 	}
 
@@ -104,9 +104,6 @@ impl Clause {
 	/// The idea of this function is to distribute the (initial) watch list effort
 	/// fairly over all variables
 	pub fn initialize_watched<T>(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable<T>>) {
-		if self.literals.len() < 2 {
-			println!("{:?}", self);
-		}
 		debug_assert!(self.literals.len() >= 2);
 		debug_assert!(self.literals[0] < self.literals[1]); // literals must already be sorted by the precomputation step!
 		let mut a: usize = 0;
@@ -129,11 +126,6 @@ impl Clause {
 		self.watched[0] = a;
 		self.watched[1] = b;
 		debug_assert!(a != b);
-		if cid == 633 {
-			println!("{} {}", a, b);
-			println!("  {}", self.literals[a]);
-			println!("  {}", self.literals[b]);
-		}
 		self.notify_watched(cid, variables);
 	}
 

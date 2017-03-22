@@ -18,7 +18,14 @@ pub struct Variable<T> {
 
 impl<T: fmt::Display> fmt::Debug for Variable<T> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "Variable{{ q: {:?}, name: {}, ante: {}, depth: {}, value: {}, watchlists: {:?} }}", self.q, self.name, self.ante, self.depth, self.value, self.watchlists)
+		write!(f,
+		       "Variable{{ q: {:?}, name: {}, ante: {}, depth: {}, value: {}, watchlists: {:?} }}",
+		       self.q,
+		       self.name,
+		       self.ante,
+		       self.depth,
+		       self.value,
+		       self.watchlists)
 	}
 }
 
