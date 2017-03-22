@@ -82,25 +82,39 @@ impl Board {
 			let mut found = false;
 			for row in 0..self.count {
 				for col in 0..self.count {
-					let mut v = 0;
+					let mut val = 0;
 					let mut c = 0;
 					for x in 0..self.count {
 						if self.data[row * self.count * self.count + col * self.count + x] {
-							v = x;
+							val = x;
 							c += 1;
 						}
 					}
 					if c == 1 {
-						for c2 in (0..self.count).filter(|&x| x != col) {
-							if self.data[row * self.count * self.count + c2 * self.count + v] {
-								self.data[row * self.count * self.count + c2 * self.count + v] = false;
+						let pos = row * self.count * self.count + col * self.count + val;
+						for c2 in 0..self.count {
+							let offset = row * self.count * self.count + c2 * self.count + val;
+							if pos != offset && self.data[offset] {
+								self.data[offset] = false;
 								found = true;
 							}
 						}
-						for r2 in (0..self.count).filter(|&x| x != row) {
-							if self.data[r2 * self.count * self.count + col * self.count + v] {
-								self.data[r2 * self.count * self.count + col * self.count + v] = false;
+						for r2 in 0..self.count {
+							let offset = r2 * self.count * self.count + col * self.count + val;
+							if pos != offset && self.data[offset] {
+								self.data[offset] = false;
 								found = true;
+							}
+						}
+						let x = row - row % self.cols;
+						let y = col - col % self.rows;
+						for a in 0..self.rows {
+							for b in 0..self.cols {
+								let offset = (x + b) * self.count * self.count + (y + a) * self.count + val;
+								if pos != offset && self.data[offset] {
+									self.data[offset] = false;
+									found = true;
+								}
 							}
 						}
 					}
@@ -109,6 +123,19 @@ impl Board {
 			if !found {
 				break;
 			}
+		}
+		for row in 0..self.count {
+			for col in 0..self.count {
+				for val in 0..self.count {
+					if self.data[row * self.count * self.count + col * self.count + val] {
+						print!("{}", val);
+					} else {
+						print!(".");
+					}
+				}
+				print!("|");
+			}
+			println!("");
 		}
 	}
 
@@ -198,26 +225,30 @@ impl Board {
 	}
 
 	pub fn solve(&self) -> Option<Vec<usize>> {
-		self.create_problem().and_then(|mut problem| match problem.solve() {
-		                                   SolverResult::Unsat => {
-			return None;
-		}
-		                                   SolverResult::Unknown => {
-			assert!(false);
-			return None;
-		}
-		                                   SolverResult::Sat => {
-			let model = problem.model();
-			let mut solution = Vec::new();
-			solution.resize(self.count * self.count, 0);
-			for t in model.iter().filter(|t| t.1 == true) {
-				debug_assert_eq!(t.1, true);
-				debug_assert_eq!(solution[*t.0 / self.count], 0);
-				solution[*t.0 / self.count] = *t.0 % self.count + 1;
+		if let Some(mut problem) = self.create_problem() {
+			match problem.solve() {
+				SolverResult::Unsat => {
+					None
+				}
+				SolverResult::Unknown => {
+					assert!(false);
+					None
+				}
+				SolverResult::Sat => {
+					let model = problem.model();
+					let mut solution = Vec::new();
+					solution.resize(self.count * self.count, 0);
+					for t in model.iter().filter(|t| t.1 == true) {
+						debug_assert_eq!(t.1, true);
+						debug_assert_eq!(solution[*t.0 / self.count], 0);
+						solution[*t.0 / self.count] = *t.0 % self.count + 1;
+					}
+					Some(solution)
+				}
 			}
-			return Some(solution);
+		} else {
+			None
 		}
-		                               })
 	}
 
 	pub fn print_dimacs(&self, writer: &mut io::Write) -> io::Result<()> {

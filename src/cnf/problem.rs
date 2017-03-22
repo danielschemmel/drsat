@@ -487,7 +487,8 @@ impl<T: fmt::Display> Problem<T> {
 	pub fn print_clauses(&self, writer: &mut io::Write) -> io::Result<()> {
 		for clause in &self.clauses {
 			for lit in clause.iter() {
-				write!(writer, "{}{} ",
+				write!(writer,
+				       "{}{} ",
 				       if lit.negated() { "-" } else { " " },
 				       self.variable_names[lit.id()])?;
 			}
@@ -497,7 +498,10 @@ impl<T: fmt::Display> Problem<T> {
 	}
 
 	pub fn print_conflict_histo(&self, writer: &mut io::Write) -> io::Result<()> {
-		writeln!(writer, "{} conflicts: {}", self.num_conflicts, self.conflict_lens)?;
+		writeln!(writer,
+		         "{} conflicts: {}",
+		         self.num_conflicts,
+		         self.conflict_lens)?;
 		let mut x = 0u64;
 		for i in 0..self.conflict_lens.bins.len() {
 			x += self.conflict_lens.bins[i] * ((i + 1) as u64);
