@@ -1,48 +1,31 @@
-use std::fmt;
-
 // Proof that u32 is large enough:
 // 1 bit is lost due to literal compression, meaning that 2 billion variables are possible
-// Variables have a fixed cost of >100 byte, so just storing 2 billion variables will take >200 GB.
+// Variables have a fixed cost of at least 80 byte, so just storing 2 billion variables will take >200 GB.
 // Additionally, any useful variable needs to be in at least 2 clauses, costing another 16GB (32GB when using u64)
 // Too bad, I am not convinced.
+#[cfg(feature = "small_variable_ids")]
+pub type VariableId = u32;
+#[cfg(not(feature = "small_variable_ids"))]
 pub type VariableId = usize;
 
-pub struct Variable<T> {
+#[derive(Debug)]
+pub struct Variable {
 	q: f64,
-	name: T,
 	watchlists: [Vec<usize>; 2],
 	ante: usize,
 	depth: usize,
 	value: bool,
 }
 
-impl<T: fmt::Display> fmt::Debug for Variable<T> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f,
-		       "Variable{{ q: {:?}, name: {}, ante: {}, depth: {}, value: {}, watchlists: {:?} }}",
-		       self.q,
-		       self.name,
-		       self.ante,
-		       self.depth,
-		       self.value,
-		       self.watchlists)
-	}
-}
-
-impl<T> Variable<T> {
-	pub fn new(name: T) -> Variable<T> {
+impl Variable {
+	pub fn new() -> Variable {
 		Variable {
-			name: name,
 			watchlists: [Vec::new(), Vec::new()],
 			ante: ::std::usize::MAX,
 			depth: ::std::usize::MAX,
 			value: false,
 			q: 0.0,
 		}
-	}
-
-	pub fn name(&self) -> &T {
-		&self.name
 	}
 
 	pub fn has_value(&self) -> bool {

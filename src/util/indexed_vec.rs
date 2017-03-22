@@ -1,7 +1,32 @@
-use std::convert::From;
 use std::fmt;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Index, IndexMut};
+
+pub trait USizeCast {
+	fn to_usize(self) -> usize;
+	fn from_usize(val: usize) -> Self;
+}
+
+impl USizeCast for usize {
+	fn to_usize(self) -> usize {
+		self
+	}
+
+	fn from_usize(val: usize) -> Self {
+		val
+	}
+}
+
+impl USizeCast for u32 {
+	fn to_usize(self) -> usize {
+		self as usize // sub 32 bit machines are unsupported anyway
+	}
+
+	fn from_usize(val: usize) -> Self {
+		debug_assert!(val < ::std::u32::MAX as usize);
+		val as Self
+	}
+}
 
 pub struct IndexedVec<Key, Value> {
 	data: Vec<Value>,
@@ -9,8 +34,7 @@ pub struct IndexedVec<Key, Value> {
 }
 
 impl<Key, Value> IndexedVec<Key, Value> {
-	pub fn new(vars: Vec<Value>) -> IndexedVec<Key, Value> {
-		// FIXME: this should be renamed to from_vec
+	pub fn from_vec(vars: Vec<Value>) -> IndexedVec<Key, Value> {
 		IndexedVec {
 			data: vars,
 			key_type: PhantomData,
@@ -18,9 +42,9 @@ impl<Key, Value> IndexedVec<Key, Value> {
 	}
 
 	pub fn len(&self) -> Key
-		where Key: From<usize>
+		where Key: USizeCast
 	{
-		Key::from(self.data.len())
+		Key::from_usize(self.data.len())
 	}
 }
 
@@ -39,20 +63,20 @@ impl<Key, Value> DerefMut for IndexedVec<Key, Value> {
 }
 
 impl<Key, Value> Index<Key> for IndexedVec<Key, Value>
-    where usize: From<Key>
+    where Key: USizeCast
 {
 	type Output = Value;
 
 	fn index(&self, index: Key) -> &Value {
-		&self.data[usize::from(index)]
+		&self.data[index.to_usize()]
 	}
 }
 
 impl<Key, Value> IndexMut<Key> for IndexedVec<Key, Value>
-    where usize: From<Key>
+    where Key: USizeCast
 {
 	fn index_mut<'a>(&'a mut self, index: Key) -> &'a mut Value {
-		&mut self.data[usize::from(index)]
+		&mut self.data[index.to_usize()]
 	}
 }
 

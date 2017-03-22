@@ -24,7 +24,7 @@ impl Clause {
 		}
 	}
 
-	pub fn from_learned<T>(mut literals: Vec<Literal>, variables: &IndexedVec<VariableId, Variable<T>>, max_depth: usize) -> (usize, Literal, Clause) {
+	pub fn from_learned(mut literals: Vec<Literal>, variables: &IndexedVec<VariableId, Variable>, max_depth: usize) -> (usize, Literal, Clause) {
 		literals.sort();
 		let mut marks = Vec::<bool>::new();
 		marks.resize(max_depth + 1, false);
@@ -53,9 +53,9 @@ impl Clause {
 		(db,
 		 lit,
 		 Clause {
-			 literals: literals,
-			 watched: [pa, pb],
-			 glue: glue,
+		     literals: literals,
+		     watched: [pa, pb],
+		     glue: glue,
 		 })
 	}
 
@@ -63,17 +63,17 @@ impl Clause {
 		self.literals.iter()
 	}
 
-	pub fn print<T: ::std::fmt::Display>(&self, f: &mut io::Write, variables: &IndexedVec<VariableId, Variable<T>>) -> io::Result<()> {
+	pub fn print<T: ::std::fmt::Display>(&self, f: &mut io::Write, variable_names: &IndexedVec<VariableId, T>) -> io::Result<()> {
 		for (i, literal) in self.literals.iter().enumerate() {
 			if i != 0 {
 				write!(f, " ")?;
 			}
-			literal.print(f, &variables[literal.id()].name())?;
+			literal.print(f, &variable_names[literal.id()])?;
 		}
 		Ok(())
 	}
 
-	pub fn update_glue<T>(&mut self, variables: &IndexedVec<VariableId, Variable<T>>, max_depth: usize) {
+	pub fn update_glue(&mut self, variables: &IndexedVec<VariableId, Variable>, max_depth: usize) {
 		if self.glue <= 2 {
 			return;
 		}
@@ -103,7 +103,7 @@ impl Clause {
 
 	/// The idea of this function is to distribute the (initial) watch list effort
 	/// fairly over all variables
-	pub fn initialize_watched<T>(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable<T>>) {
+	pub fn initialize_watched(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>) {
 		debug_assert!(self.literals.len() >= 2);
 		debug_assert!(self.literals[0] < self.literals[1]); // literals must already be sorted by the precomputation step!
 		let mut a: usize = 0;
@@ -129,7 +129,7 @@ impl Clause {
 		self.notify_watched(cid, variables);
 	}
 
-	pub fn notify_watched<T>(&self, cid: usize, variables: &mut IndexedVec<VariableId, Variable<T>>) {
+	pub fn notify_watched(&self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>) {
 		let lit0 = self.literals[self.watched[0]];
 		if !variables[lit0.id()].has_value() || variables[lit0.id()].get_depth() != 0 {
 			variables[lit0.id()].watch(cid, lit0.negated());
@@ -142,7 +142,7 @@ impl Clause {
 		self.literals[self.watched[0]].id() == id || self.literals[self.watched[1]].id() == id
 	}
 
-	pub fn apply<T>(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable<T>>) -> Apply {
+	pub fn apply(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>) -> Apply {
 		let mut lit0 = self.literals[self.watched[0]];
 		if let Some(val) = variables[lit0.id()].value() {
 			if lit0.negated() != val {
@@ -219,7 +219,7 @@ impl Clause {
 		}
 	}
 
-	fn percolate_sat<T>(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable<T>>, start: usize, mut pos: usize, lit: Literal) {
+	fn percolate_sat(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>, start: usize, mut pos: usize, lit: Literal) {
 		let mut mind = variables[lit.id()].get_depth();
 		let mut i = pos;
 		loop {

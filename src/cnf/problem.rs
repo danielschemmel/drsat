@@ -12,7 +12,8 @@ use SolverResult;
 pub struct Problem<T: fmt::Display> {
 	alpha: f64,
 	gc_count: u64,
-	variables: IndexedVec<VariableId, Variable<T>>,
+	variables: IndexedVec<VariableId, Variable>,
+	variable_names: IndexedVec<VariableId, T>,
 	clauses: Vec<Clause>,
 	applications: Vec<VariableId>,
 	irreducible: usize,
@@ -25,14 +26,15 @@ pub struct Problem<T: fmt::Display> {
 	solution: SolverResult,
 }
 
-fn precompute<T: fmt::Display>(mut variables: &mut IndexedVec<VariableId, Variable<T>>, mut clauses: &mut Vec<Vec<Literal>>) -> SolverResult {
+fn precompute(mut variables: &mut IndexedVec<VariableId, Variable>, mut clauses: &mut Vec<Vec<Literal>>) -> SolverResult {
 	// sorting
 	for clause in clauses.iter_mut() {
 		clause.sort();
 	}
 	// clauses w/ multiple literals for one variable
 	// unimplemented!();
-	// binary propagation
+
+	// unary propagation
 	{
 		let mut v = Vec::new();
 		let mut w = Vec::new();
@@ -119,7 +121,7 @@ fn precompute<T: fmt::Display>(mut variables: &mut IndexedVec<VariableId, Variab
 impl<T: fmt::Display> Problem<T> {
 	pub fn new(names: Vec<T>, mut clauses: Vec<Vec<Literal>>) -> Problem<T> {
 		let varcount = names.len();
-		let mut variables = IndexedVec::new(names.into_iter().map(|x| Variable::new(x)).collect());
+		let mut variables = IndexedVec::from_vec((0..varcount).map(|_| Variable::new()).collect());
 		let solution = precompute(&mut variables, &mut clauses);
 		let irreducible = clauses.len();
 		let mut last_conflict = Vec::new();
@@ -129,6 +131,7 @@ impl<T: fmt::Display> Problem<T> {
 			alpha: 0.4,
 			gc_count: 0,
 			variables: variables,
+			variable_names: IndexedVec::from_vec(names),
 			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
 			applications: Vec::with_capacity(varcount),
 			irreducible: irreducible,
@@ -175,11 +178,11 @@ impl<T: fmt::Display> Problem<T> {
 			}
 		}
 		let m: f64 = *self.variables
-			.iter()
-			.filter(|var| !var.has_value())
-			.map(|v| v.q())
-			.max_by(|a, b| a.partial_cmp(b).unwrap())
-			.unwrap();
+		                  .iter()
+		                  .filter(|var| !var.has_value())
+		                  .map(|v| v.q())
+		                  .max_by(|a, b| a.partial_cmp(b).unwrap())
+		                  .unwrap();
 		for v in self.variables.iter_mut() {
 			*v.q_mut() /= m;
 		}
@@ -229,10 +232,10 @@ impl<T: fmt::Display> Problem<T> {
 			debug_assert!(self.variables[lit.id()].has_value());
 		}
 		debug_assert!(self.clauses[cid]
-			.iter()
-			.map(|lit| self.variables[lit.id()].get_depth())
-			.max()
-			.unwrap() == self.depth);
+		                  .iter()
+		                  .map(|lit| self.variables[lit.id()].get_depth())
+		                  .max()
+		                  .unwrap() == self.depth);
 		let mut marks = Vec::<bool>::new();
 		marks.resize(self.variables.len() as usize, false);
 		let mut lits = Vec::<Literal>::new();
@@ -296,9 +299,9 @@ impl<T: fmt::Display> Problem<T> {
 			debug_assert!(self.variables[lit.id()].has_value());
 			self.backjump();
 			self.conflict_lens.add(self.clauses
-				.last()
-				.unwrap()
-				.len() - 1);
+			                           .last()
+			                           .unwrap()
+			                           .len() - 1);
 			self.clauses
 				.last()
 				.unwrap()
@@ -456,18 +459,18 @@ impl<T: fmt::Display> Problem<T> {
 	}
 
 	pub fn print_model(&self, indent: &str) {
-		for var in self.variables.iter() {
+		for (var, name) in self.variables.iter().zip(self.variable_names.iter()) {
 			// FIXME: allow using &self.variables here
 			debug_assert!(var.has_value());
-			println!("{}{}: {}", indent, var.name(), var.get_value());
+			println!("{}{}: {}", indent, name, var.get_value());
 		}
 	}
 
 	pub fn model(&self) -> Vec<(&T, bool)> {
-		let mut result = Vec::with_capacity(self.variables.len());
-		for var in self.variables.iter() {
+		let mut result = Vec::with_capacity(self.variables.len() as usize);
+		for (var, name) in self.variables.iter().zip(self.variable_names.iter()) {
 			debug_assert!(var.has_value());
-			result.push((var.name(), var.get_value()));
+			result.push((name, var.get_value()));
 		}
 		result
 	}
@@ -475,30 +478,31 @@ impl<T: fmt::Display> Problem<T> {
 	pub fn print(&self, writer: &mut io::Write) -> io::Result<()> {
 		writeln!(writer, "Problem of {} clauses:", self.clauses.len())?;
 		for clause in &self.clauses {
-			clause.print(writer, &self.variables)?;
+			clause.print(writer, &self.variable_names)?;
 			writeln!(writer, "")?;
 		}
 		Ok(())
 	}
 
-	pub fn print_clauses(&self) {
+	pub fn print_clauses(&self, writer: &mut io::Write) -> io::Result<()> {
 		for clause in &self.clauses {
 			for lit in clause.iter() {
-				print!("{}{} ",
+				write!(writer, "{}{} ",
 				       if lit.negated() { "-" } else { " " },
-				       self.variables[lit.id()].name());
+				       self.variable_names[lit.id()])?;
 			}
-			println!("");
+			writeln!(writer, "")?;
 		}
+		Ok(())
 	}
 
-	pub fn print_conflict_histo(&self) {
-		println!("{} conflicts: {}", self.num_conflicts, self.conflict_lens);
+	pub fn print_conflict_histo(&self, writer: &mut io::Write) -> io::Result<()> {
+		writeln!(writer, "{} conflicts: {}", self.num_conflicts, self.conflict_lens)?;
 		let mut x = 0u64;
 		for i in 0..self.conflict_lens.bins.len() {
 			x += self.conflict_lens.bins[i] * ((i + 1) as u64);
 		}
-		println!("  of total complexity {}", x);
+		writeln!(writer, "  of total complexity {}", x)
 	}
 
 	pub fn print_dimacs(&self, writer: &mut io::Write) -> io::Result<()> {
@@ -543,13 +547,8 @@ pub fn print_stats(f: &mut io::Write, indent: &str) -> io::Result<()> {
 	writeln!(f,
 	         "{}{:8} {:3}",
 	         indent,
-	         "Variable<usize>",
-	         ::util::Typeinfo::<Variable<usize>>::new())?;
-	writeln!(f,
-	         "{}{:8} {:3}",
-	         indent,
-	         "Variable<String>",
-	         ::util::Typeinfo::<Variable<String>>::new())?;
+	         "Variable",
+	         ::util::Typeinfo::<Variable>::new())?;
 	writeln!(f,
 	         "{}{:8} {:3}",
 	         indent,

@@ -107,17 +107,17 @@ fn parse_usize(reader: &mut BufRead) -> Result<usize> {
 fn parse_header(reader: &mut BufRead) -> Result<(usize, usize)> {
 	skip_ws(reader)?;
 	if !{
-		let buf = reader.fill_buf()?;
-		buf.len() >= 1 && buf[0] == b'p'
-	} {
+		    let buf = reader.fill_buf()?;
+		    buf.len() >= 1 && buf[0] == b'p'
+		   } {
 		bail!(ErrorKind::ExpectedP);
 	}
 	reader.consume(1);
 	skip_ws(reader)?;
 	if !{
-		let buf = reader.fill_buf()?;
-		buf.len() >= 3 && buf[0] == b'c' && buf[1] == b'n' && buf[2] == b'f'
-	} {
+		    let buf = reader.fill_buf()?;
+		    buf.len() >= 3 && buf[0] == b'c' && buf[1] == b'n' && buf[2] == b'f'
+		   } {
 		bail!(ErrorKind::ExpectedCNF);
 	}
 	reader.consume(3);

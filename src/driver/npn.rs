@@ -8,11 +8,11 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app.about("Parse and solve a npn query")
 		.setting(AppSettings::ColoredHelp)
 		.arg(Arg::with_name("query")
-			.required(true)
-			.index(1)
-			.takes_value(true)
-			.value_name("QUERY")
-			.help("A query in normal polish notation"))
+		         .required(true)
+		         .index(1)
+		         .takes_value(true)
+		         .value_name("QUERY")
+		         .help("A query in normal polish notation"))
 		.arg(Arg::with_name("time").short("t").long("time").help("Time the solving process"))
 		.arg(Arg::with_name("dump-ast").long("dump-ast").help("Dump the AST of the problem after parsing it"))
 }
@@ -30,7 +30,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	}
 	if matches.is_present("dump-ast") {
 		//println!("{:?}", problem);
-		problem.print_clauses();
+		problem.print_clauses(&mut ::std::io::stdout())?;
 	}
 
 	sw.start();
@@ -38,7 +38,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	sw.stop();
 	if time {
 		println!("[T] Solving query: {}", sw);
-		problem.print_conflict_histo();
+		problem.print_conflict_histo(&mut ::std::io::stdout())?;
 	}
 	match result {
 		SolverResult::Sat => {

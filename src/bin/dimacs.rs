@@ -9,11 +9,11 @@ const NAME: &'static str = "dimacs";
 
 fn gen_cli() -> App<'static, 'static> {
 	driver::dimacs::setup_command(App::new(NAME)
-			.version(VERSION)
-			.about("Solve a query contained in a dimacs file, as used by the SAT competitions")
-			.setting(AppSettings::ColoredHelp)
-			.setting(AppSettings::GlobalVersion))
-		.arg(driver::completion::gen_arg().conflicts_with("path").long("completion"))
+	                                  .version(VERSION)
+	                                  .about("Solve a query contained in a dimacs file, as used by the SAT competitions")
+	                                  .setting(AppSettings::ColoredHelp)
+	                                  .setting(AppSettings::GlobalVersion))
+			.arg(driver::completion::gen_arg().conflicts_with("path").long("completion"))
 }
 
 fn run() -> Result<()> {

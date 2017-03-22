@@ -199,25 +199,25 @@ impl Board {
 
 	pub fn solve(&self) -> Option<Vec<usize>> {
 		self.create_problem().and_then(|mut problem| match problem.solve() {
-			SolverResult::Unsat => {
-				return None;
+		                                   SolverResult::Unsat => {
+			return None;
+		}
+		                                   SolverResult::Unknown => {
+			assert!(false);
+			return None;
+		}
+		                                   SolverResult::Sat => {
+			let model = problem.model();
+			let mut solution = Vec::new();
+			solution.resize(self.count * self.count, 0);
+			for t in model.iter().filter(|t| t.1 == true) {
+				debug_assert_eq!(t.1, true);
+				debug_assert_eq!(solution[*t.0 / self.count], 0);
+				solution[*t.0 / self.count] = *t.0 % self.count + 1;
 			}
-			SolverResult::Unknown => {
-				assert!(false);
-				return None;
-			}
-			SolverResult::Sat => {
-				let model = problem.model();
-				let mut solution = Vec::new();
-				solution.resize(self.count * self.count, 0);
-				for t in model.iter().filter(|t| t.1 == true) {
-					debug_assert_eq!(t.1, true);
-					debug_assert_eq!(solution[*t.0 / self.count], 0);
-					solution[*t.0 / self.count] = *t.0 % self.count + 1;
-				}
-				return Some(solution);
-			}
-		})
+			return Some(solution);
+		}
+		                               })
 	}
 
 	pub fn print_dimacs(&self, writer: &mut io::Write) -> io::Result<()> {

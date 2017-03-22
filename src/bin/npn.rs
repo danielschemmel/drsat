@@ -9,11 +9,11 @@ const NAME: &'static str = "npn";
 
 fn gen_cli() -> App<'static, 'static> {
 	driver::npn::setup_command(App::new(NAME)
-			.version(VERSION)
-			.about("Solve a npn query, as used for the student programming task")
-			.setting(AppSettings::ColoredHelp)
-			.setting(AppSettings::GlobalVersion))
-		.arg(driver::completion::gen_arg().conflicts_with("query").long("completion"))
+	                               .version(VERSION)
+	                               .about("Solve a npn query, as used for the student programming task")
+	                               .setting(AppSettings::ColoredHelp)
+	                               .setting(AppSettings::GlobalVersion))
+			.arg(driver::completion::gen_arg().conflicts_with("query").long("completion"))
 }
 
 fn run() -> Result<()> {
