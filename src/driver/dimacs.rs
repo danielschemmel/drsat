@@ -15,7 +15,7 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 		         .help("The path to the dimacs file"))
 		.arg(Arg::with_name("time").short("t").long("time").help("Time the solving process"))
 		.arg(Arg::with_name("model").short("m").long("model").help("Print a model for satisfying results"))
-		.arg(Arg::with_name("dump-ast").long("dump-ast").help("Dump the AST of the problem after parsing it"))
+		.arg(Arg::with_name("preprocess").short("p").long("Dump a new dimacs file after preprocessing (note: this does not preserve names!)").help(""))
 }
 
 pub fn main(matches: &ArgMatches) -> Result<()> {
@@ -34,11 +34,10 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	let mut problem = ::parser::dimacs::parse(&mut reader).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
-		println!("[T] Parsing file: {}", sw);
+		println!("[T] Parsing and preprocessing file: {}", sw);
 	}
-	if matches.is_present("dump-ast") {
-		//println!("{:?}", problem);
-		problem.print_clauses();
+	if matches.is_present("preprocess") {
+		problem.print_dimacs();
 	}
 
 	sw.start();

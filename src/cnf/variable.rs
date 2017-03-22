@@ -1,15 +1,29 @@
-#[derive(Debug)]
-pub struct Variable {
+use std::fmt;
+
+// Proof that u32 is large enough:
+// 1 bit is lost due to literal compression, meaning that 2 billion variables are possible
+// Variables have a fixed cost of >100 byte, so just storing 2 billion variables will take >200 GB.
+// Additionally, any useful variable needs to be in at least 2 clauses, costing another 16GB (32GB when using u64)
+// Too bad, I am not convinced.
+pub type VariableId = usize;
+
+pub struct Variable<T> {
 	q: f64,
-	name: String,
+	name: T,
 	watchlists: [Vec<usize>; 2],
 	ante: usize,
 	depth: usize,
 	value: bool,
 }
 
-impl Variable {
-	pub fn new(name: String) -> Variable {
+impl<T: fmt::Display> fmt::Debug for Variable<T> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "Variable{{ q: {:?}, name: {}, ante: {}, depth: {}, value: {}, watchlists: {:?} }}", self.q, self.name, self.ante, self.depth, self.value, self.watchlists)
+	}
+}
+
+impl<T> Variable<T> {
+	pub fn new(name: T) -> Variable<T> {
 		Variable {
 			name: name,
 			watchlists: [Vec::new(), Vec::new()],
@@ -20,7 +34,7 @@ impl Variable {
 		}
 	}
 
-	pub fn name(&self) -> &str {
+	pub fn name(&self) -> &T {
 		&self.name
 	}
 
@@ -86,6 +100,10 @@ impl Variable {
 	pub fn clear_watched(&mut self) {
 		self.watchlists[0].clear();
 		self.watchlists[1].clear();
+	}
+
+	pub fn watches(&self, cid: usize) -> bool {
+		self.watchlists[0].iter().chain(self.watchlists[1].iter()).any(|&x| x == cid)
 	}
 
 	pub fn q(&self) -> &f64 {

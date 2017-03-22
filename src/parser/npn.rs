@@ -160,7 +160,7 @@ fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder<usize>) -> Re
 	}
 }
 
-pub fn parse(reader: &mut BufRead) -> Result<Problem> {
+pub fn parse(reader: &mut BufRead) -> Result<Problem<usize>> {
 	skip_comments(reader)?;
 	let mut builder = ProblemBuilder::new();
 	let (variables, clauses) = parse_header(reader)?;

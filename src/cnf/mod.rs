@@ -11,10 +11,7 @@ mod problembuilder;
 pub use self::problembuilder::ProblemBuilder;
 
 pub mod variable;
-pub use self::variable::Variable;
-
-mod variable_vec;
-pub use self::variable_vec::{VariableId, VariableVec};
+pub use self::variable::{Variable, VariableId};
 
 #[cfg(test)]
 mod tests;

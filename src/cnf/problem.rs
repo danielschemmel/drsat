@@ -1,17 +1,18 @@
 use std::collections::HashMap;
 use std::fmt;
-use std::io::{Error, Write};
+use std::io;
+use std::str;
 
-use util::Histo;
+use util::{Histo, IndexedVec};
 
-use super::{Clause, Literal, Variable, VariableId, VariableVec};
+use super::{Clause, Literal, Variable, VariableId};
 use SolverResult;
 
 #[derive(Debug)]
-pub struct Problem {
+pub struct Problem<T: fmt::Display> {
 	alpha: f64,
 	gc_count: u64,
-	variables: VariableVec,
+	variables: IndexedVec<VariableId, Variable<T>>,
 	clauses: Vec<Clause>,
 	applications: Vec<VariableId>,
 	irreducible: usize,
@@ -21,18 +22,113 @@ pub struct Problem {
 	depth: usize,
 	active_variables: usize,
 	conflict_lens: Histo,
+	solution: SolverResult,
 }
 
-impl Problem {
-	pub fn new<T: ::std::fmt::Display>(names: Vec<T>, clauses: Vec<Vec<Literal>>) -> Problem {
+fn precompute<T: fmt::Display>(mut variables: &mut IndexedVec<VariableId, Variable<T>>, mut clauses: &mut Vec<Vec<Literal>>) -> SolverResult {
+	// sorting
+	for clause in clauses.iter_mut() {
+		clause.sort();
+	}
+	// clauses w/ multiple literals for one variable
+	// unimplemented!();
+	// binary propagation
+	{
+		let mut v = Vec::new();
+		let mut w = Vec::new();
+		loop {
+			let mut ci = 0;
+			while ci < clauses.len() {
+				let mut i = 0;
+				let mut k = 0;
+				let mut sat = false;
+				{
+					let ref mut clause = clauses[ci];
+					let mut j = 0;
+					debug_assert!(clause.len() > 0);
+					while i < clause.len() && j < v.len() {
+						if clause[i].id() < v[j] {
+							if i != k {
+								clause[k] = clause[i];
+							}
+							i += 1;
+							k += 1;
+						} else if clause[i].id() > v[j] {
+							j += 1;
+						} else {
+							let ref var = variables[v[j]];
+							debug_assert!(var.has_value());
+							if clause[i].negated() != var.get_value() {
+								sat = true;
+								break;
+							}
+							i += 1;
+						}
+					}
+					if !sat && i < clause.len() {
+						if i != k {
+							while i < clause.len() {
+								clause[k] = clause[i];
+								i += 1;
+								k += 1;
+							}
+						} else {
+							i = clause.len();
+							k = clause.len();
+						}
+					}
+				}
+				if sat {
+					clauses.swap_remove(ci);
+				} else if k == 0 {
+					return SolverResult::Unsat;
+				} else if k == 1 {
+					let lit = clauses[ci][0];
+					let ref mut var = variables[lit.id()];
+					if var.has_value() {
+						if lit.negated() == var.get_value() {
+							return SolverResult::Unsat;
+						}
+					} else {
+						var.set(!lit.negated(), 0, ::std::usize::MAX);
+						w.push(lit.id());
+					}
+					clauses.swap_remove(ci);
+				} else {
+					if i != k {
+						clauses[ci].truncate(k);
+					}
+					ci += 1;
+				}
+			}
+			if w.is_empty() {
+				break;
+			}
+			::std::mem::swap(&mut v, &mut w);
+			v.sort();
+			w.clear();
+		}
+	}
+	if clauses.is_empty() {
+		SolverResult::Sat
+	} else {
+		SolverResult::Unknown
+	}
+}
+
+impl<T: fmt::Display> Problem<T> {
+	pub fn new(names: Vec<T>, mut clauses: Vec<Vec<Literal>>) -> Problem<T> {
 		let varcount = names.len();
+		let mut variables = IndexedVec::new(names.into_iter().map(|x| Variable::new(x)).collect());
+		let solution = precompute(&mut variables, &mut clauses);
 		let irreducible = clauses.len();
 		let mut last_conflict = Vec::new();
 		last_conflict.resize(varcount, 0);
+		let active_variables = variables.iter().filter(|var| !var.has_value()).count();
 		let mut problem = Problem {
 			alpha: 0.4,
 			gc_count: 0,
-			variables: VariableVec::new(names.into_iter().map(|x| Variable::new(x.to_string())).collect()),
+			variables: variables,
 			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
 			applications: Vec::with_capacity(varcount),
 			irreducible: irreducible,
@@ -40,10 +136,13 @@ impl Problem {
 			last_conflict: last_conflict,
 			plays: Vec::with_capacity(varcount),
 			depth: 0,
-			active_variables: varcount,
+			active_variables: active_variables,
 			conflict_lens: Histo::new(),
+			solution: solution,
 		};
-		problem.initialize();
+		if problem.solution == SolverResult::Unknown {
+			problem.initialize();
+		}
 		problem
 	}
 
@@ -60,21 +159,24 @@ impl Problem {
 			self.clauses[i].initialize_watched(i, &mut self.variables);
 		}
 		for (id, count) in counters.iter_mut().enumerate() {
-			let lo: f64 = {
-				let mut vec: Vec<f64> = count[0].drain().map(|(len, c)| (2.0f64).powi(-len) * (c as f64)).collect();
-				vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
-				vec.iter().sum()
-			};
-			let hi: f64 = {
-				let mut vec: Vec<f64> = count[1].drain().map(|(len, c)| (2.0f64).powi(-len) * (c as f64)).collect();
-				vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
-				vec.iter().sum()
-			};
-			self.variables[id as VariableId].set_phase(lo < hi);
-			*self.variables[id as VariableId].q_mut() = lo + hi;
+			if !self.variables[id as VariableId].has_value() {
+				let lo: f64 = {
+					let mut vec: Vec<f64> = count[0].drain().map(|(len, c)| (2.0f64).powi(-len) * (c as f64)).collect();
+					vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
+					vec.iter().sum()
+				};
+				let hi: f64 = {
+					let mut vec: Vec<f64> = count[1].drain().map(|(len, c)| (2.0f64).powi(-len) * (c as f64)).collect();
+					vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
+					vec.iter().sum()
+				};
+				self.variables[id as VariableId].set_phase(lo < hi);
+				*self.variables[id as VariableId].q_mut() = lo + hi;
+			}
 		}
 		let m: f64 = *self.variables
 		                  .iter()
+											.filter(|var| !var.has_value())
 		                  .map(|v| v.q())
 		                  .max_by(|a, b| a.partial_cmp(b).unwrap())
 		                  .unwrap();
@@ -84,6 +186,9 @@ impl Problem {
 	}
 
 	pub fn solve(&mut self) -> SolverResult {
+		if self.solution != SolverResult::Unknown {
+			return self.solution;
+		}
 		let mut gc_next: u32 = 2047; // a u32 is safe, as the runtime to cause an overflow is prohibitive
 		let mut gc_pos: u32 = 0;
 		let mut conflict: Option<usize> = None;
@@ -358,6 +463,24 @@ impl Problem {
 		}
 	}
 
+	pub fn model(&self) -> Vec<(&T, bool)> {
+		let mut result = Vec::with_capacity(self.variables.len());
+		for var in self.variables.iter() {
+			debug_assert!(var.has_value());
+			result.push((var.name(), var.get_value()));
+		}
+		result
+	}
+
+	pub fn print(&self, writer: &mut io::Write) -> io::Result<()> {
+		writeln!(writer, "Problem of {} clauses:", self.clauses.len())?;
+		for clause in &self.clauses {
+			clause.print(writer, &self.variables)?;
+			writeln!(writer, "")?;
+		}
+		Ok(())
+	}
+
 	pub fn print_clauses(&self) {
 		for clause in &self.clauses {
 			for lit in clause.iter() {
@@ -377,20 +500,32 @@ impl Problem {
 		}
 		println!("  of total complexity {}", x);
 	}
-}
 
-impl fmt::Display for Problem {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		writeln!(f, "Problem of {} clauses:", self.clauses.len())?;
-		for clause in &self.clauses {
-			clause.print(f, &self.variables)?;
-			writeln!(f, "")?;
+	pub fn print_dimacs(&self) {
+		println!("p cnf {} {}", self.variables.len(), self.clauses.len());
+		for clause in self.clauses.iter() {
+			for lit in clause.iter() {
+				if lit.negated() {
+					print!("-");
+				}
+				print!("{} ", lit.id() + 1);
+			}
+			println!("0");
 		}
-		Ok(())
 	}
 }
 
-pub fn print_stats(f: &mut Write, indent: &str) -> Result<(), Error> {
+impl<T: fmt::Display> fmt::Display for Problem<T> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		// FIXME: why the fuck can I not do this w/o buffering?
+		let mut v = Vec::<u8>::new();
+		self.print(&mut v).unwrap();
+		let s = str::from_utf8(&v).unwrap();
+		write!(f, "{}", s)
+	}
+}
+
+pub fn print_stats(f: &mut io::Write, indent: &str) -> io::Result<()> {
 	writeln!(f,
 	         "{}{:8} {:3}",
 	         indent,
@@ -404,12 +539,22 @@ pub fn print_stats(f: &mut Write, indent: &str) -> Result<(), Error> {
 	writeln!(f,
 	         "{}{:8} {:3}",
 	         indent,
-	         "Variable",
-	         ::util::Typeinfo::<Variable>::new())?;
+	         "Variable<usize>",
+	         ::util::Typeinfo::<Variable<usize>>::new())?;
 	writeln!(f,
 	         "{}{:8} {:3}",
 	         indent,
-	         "Problem",
-	         ::util::Typeinfo::<Problem>::new())?;
+	         "Variable<String>",
+	         ::util::Typeinfo::<Variable<String>>::new())?;
+	writeln!(f,
+	         "{}{:8} {:3}",
+	         indent,
+	         "Problem<usize>",
+	         ::util::Typeinfo::<Problem<usize>>::new())?;
+	writeln!(f,
+	         "{}{:8} {:3}",
+	         indent,
+	         "Problem<String>",
+	         ::util::Typeinfo::<Problem<String>>::new())?;
 	Ok(())
 }

@@ -38,7 +38,7 @@ impl<T> ProblemBuilder<T>
 		self.names2index.reserve(additional);
 	}
 
-	pub fn as_problem(self) -> Problem {
+	pub fn as_problem(self) -> Problem<T> {
 		Problem::new(self.names, self.clauses)
 	}
 
