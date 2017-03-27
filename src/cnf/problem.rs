@@ -512,7 +512,7 @@ impl<T: fmt::Display> Problem<T> {
 	pub fn print_dimacs(&self, writer: &mut io::Write) -> io::Result<()> {
 		writeln!(writer,
 		         "p cnf {} {}",
-		         self.active_variables(),
+		         self.active_variables,
 		         self.clauses.len())?;
 		for clause in self.clauses.iter() {
 			for lit in clause.iter() {
