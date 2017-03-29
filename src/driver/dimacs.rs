@@ -15,7 +15,7 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 		         .help("The path to the dimacs file"))
 		.arg(Arg::with_name("time").short("t").long("time").help("Time the solving process"))
 		.arg(Arg::with_name("model").short("m").long("model").help("Print a model for satisfying results"))
-		.arg(Arg::with_name("preprocess").short("p").long("Dump a new dimacs file after preprocessing (note: this does not preserve names!)").help(""))
+		.arg(Arg::with_name("preprocess").short("p").long("preprocess").help("Dump a new dimacs file after preprocessing (note: this does not preserve names!)"))
 }
 
 pub fn main(matches: &ArgMatches) -> Result<()> {
