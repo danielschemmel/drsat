@@ -33,8 +33,13 @@ impl Clause {
 		let mut pa: usize = 0;
 		let mut db: usize = 0;
 		let mut pb: usize = 0;
-		debug_assert!(literals.iter().all(|lit| variables[lit.id()].has_value()));
-		for (i, depth) in literals.iter().map(|lit| variables[lit.id()].get_depth()).enumerate() {
+		debug_assert!(literals
+		                  .iter()
+		                  .all(|lit| variables[lit.id()].has_value()));
+		for (i, depth) in literals
+		        .iter()
+		        .map(|lit| variables[lit.id()].get_depth())
+		        .enumerate() {
 			if !marks[depth] {
 				glue += 1;
 				marks[depth] = true;
@@ -80,7 +85,9 @@ impl Clause {
 		let mut marks = Vec::<bool>::new();
 		marks.resize(max_depth + 1, false);
 		let mut glue: usize = 0;
-		for depth in self.literals.iter().map(|lit| variables[lit.id()].get_depth()) {
+		for depth in self.literals
+		        .iter()
+		        .map(|lit| variables[lit.id()].get_depth()) {
 			if !marks[depth] {
 				glue += 1;
 				marks[depth] = true;

@@ -14,9 +14,18 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 		         .takes_value(true)
 		         .value_name("FILE")
 		         .help("The path to the file containing the puzzle"))
-		.arg(Arg::with_name("time").short("t").long("time").help("Time the solving process"))
-		.arg(Arg::with_name("all").short("a").long("all").help("Give all solutions"))
-		.arg(Arg::with_name("deduce").short("d").long("deduce").help("Simplify problem by deducing implications via sudoku rules"))
+		.arg(Arg::with_name("time")
+		         .short("t")
+		         .long("time")
+		         .help("Time the solving process"))
+		.arg(Arg::with_name("all")
+		         .short("a")
+		         .long("all")
+		         .help("Give all solutions"))
+		.arg(Arg::with_name("deduce")
+		         .short("d")
+		         .long("deduce")
+		         .help("Simplify problem by deducing implications via sudoku rules"))
 		.arg(Arg::with_name("query")
 		         .short("q")
 		         .long("query")
@@ -40,12 +49,8 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 }
 
 pub fn main(matches: &ArgMatches) -> Result<()> {
-	let rows = matches.value_of("rows")
-		.unwrap()
-		.parse()?; // FIXME: add better error handling
-	let cols = matches.value_of("cols")
-		.unwrap()
-		.parse()?;
+	let rows = matches.value_of("rows").unwrap().parse()?; // FIXME: add better error handling
+	let cols = matches.value_of("cols").unwrap().parse()?;
 	ensure!(rows > 0 && rows < 36, "rows must be in [1; 35]");
 	ensure!(cols > 0 && cols < 36, "cols must be in [1; 35]");
 

@@ -93,7 +93,10 @@ impl Variable {
 	}
 
 	pub fn watches(&self, cid: usize) -> bool {
-		self.watchlists[0].iter().chain(self.watchlists[1].iter()).any(|&x| x == cid)
+		self.watchlists[0]
+			.iter()
+			.chain(self.watchlists[1].iter())
+			.any(|&x| x == cid)
 	}
 
 	pub fn q(&self) -> &f64 {

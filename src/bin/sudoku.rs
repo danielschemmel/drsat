@@ -13,7 +13,9 @@ fn gen_cli() -> App<'static, 'static> {
 	                                  .about("Solve a sudoku puzzle")
 	                                  .setting(AppSettings::ColoredHelp)
 	                                  .setting(AppSettings::GlobalVersion))
-			.arg(driver::completion::gen_arg().conflicts_with("path").long("completion"))
+			.arg(driver::completion::gen_arg()
+			         .conflicts_with("path")
+			         .long("completion"))
 }
 
 fn run() -> Result<()> {

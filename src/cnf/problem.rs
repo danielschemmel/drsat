@@ -157,19 +157,27 @@ impl<T: fmt::Display> Problem<T> {
 		for i in 0..self.clauses.len() {
 			let len = self.clauses[i].len();
 			for (id, negated) in self.clauses[i].iter().map(|lit| lit.disassemble()) {
-				*counters[id as usize][negated as usize].entry(len as i32).or_insert(0) += 1; // FIXME: this cast is only mostly safe
+				*counters[id as usize][negated as usize]
+				     .entry(len as i32)
+				     .or_insert(0) += 1; // FIXME: this cast is only mostly safe
 			}
 			self.clauses[i].initialize_watched(i, &mut self.variables);
 		}
 		for (id, count) in counters.iter_mut().enumerate() {
 			if !self.variables[id as VariableId].has_value() {
 				let lo: f64 = {
-					let mut vec: Vec<f64> = count[0].drain().map(|(len, c)| (2.0f64).powi(-len) * (c as f64)).collect();
+					let mut vec: Vec<f64> = count[0]
+						.drain()
+						.map(|(len, c)| (2.0f64).powi(-len) * (c as f64))
+						.collect();
 					vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
 					vec.iter().sum()
 				};
 				let hi: f64 = {
-					let mut vec: Vec<f64> = count[1].drain().map(|(len, c)| (2.0f64).powi(-len) * (c as f64)).collect();
+					let mut vec: Vec<f64> = count[1]
+						.drain()
+						.map(|(len, c)| (2.0f64).powi(-len) * (c as f64))
+						.collect();
 					vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
 					vec.iter().sum()
 				};
@@ -298,10 +306,8 @@ impl<T: fmt::Display> Problem<T> {
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id()].has_value());
 			self.backjump();
-			self.conflict_lens.add(self.clauses
-			                           .last()
-			                           .unwrap()
-			                           .len() - 1);
+			self.conflict_lens
+				.add(self.clauses.last().unwrap().len() - 1);
 			self.clauses
 				.last()
 				.unwrap()
@@ -313,7 +319,9 @@ impl<T: fmt::Display> Problem<T> {
 	}
 
 	fn subsumption_check(&self, vid: VariableId, marks: &mut Vec<bool>) -> bool {
-		for id in self.clauses[self.variables[vid].get_ante()].iter().map(|lit| lit.id()) {
+		for id in self.clauses[self.variables[vid].get_ante()]
+		        .iter()
+		        .map(|lit| lit.id()) {
 			if vid != id && !marks[id as usize] && self.variables[id].get_depth() != 0 {
 				if self.variables[id].get_ante() != ::std::usize::MAX && self.subsumption_check(id, marks) {
 					marks[id as usize] = true;
@@ -449,7 +457,10 @@ impl<T: fmt::Display> Problem<T> {
 			var.clear_watched();
 		}
 		self.clauses[self.irreducible..].sort_by_key(|ref clause| clause.get_glue());
-		self.irreducible += self.clauses[self.irreducible..].iter().take_while(|ref clause| clause.get_glue() == 2).count();
+		self.irreducible += self.clauses[self.irreducible..]
+			.iter()
+			.take_while(|ref clause| clause.get_glue() == 2)
+			.count();
 		let truncate = self.clauses.len() - (self.clauses.len() - self.irreducible) / 2;
 		self.clauses.truncate(truncate);
 		for (cid, ref clause) in self.clauses.iter_mut().enumerate() {

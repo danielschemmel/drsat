@@ -40,15 +40,22 @@ fn update_file(path: &Path, content: &str) -> Result<()> {
 }
 
 fn format_version(version: &str) -> String {
-	let cargo = env::var_os("CARGO_PKG_VERSION").unwrap_or("UNKNOWN".into()).into_string().unwrap_or("UNKNOWN".into());
+	let cargo = env::var_os("CARGO_PKG_VERSION")
+		.unwrap_or("UNKNOWN".into())
+		.into_string()
+		.unwrap_or("UNKNOWN".into());
 	format!("pub const VERSION: &'static str = {:?};\n",
 	        format!("{} {}", cargo, version))
 }
 
 fn repository_description<P: AsRef<Path>>(dir: P) -> Result<String> {
 	let repo = Repository::discover(dir)?;
-	let desc = repo.describe(&DescribeOptions::new().describe_tags().show_commit_oid_as_fallback(true))?;
-	let content = desc.format(Some(DescribeFormatOptions::new().dirty_suffix(".+").abbreviated_size(16)))?;
+	let desc = repo.describe(&DescribeOptions::new()
+		                          .describe_tags()
+		                          .show_commit_oid_as_fallback(true))?;
+	let content = desc.format(Some(DescribeFormatOptions::new()
+		                               .dirty_suffix(".+")
+		                               .abbreviated_size(16)))?;
 	Ok(content)
 }
 

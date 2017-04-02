@@ -67,7 +67,9 @@ impl Board {
 		debug_assert!(col < self.count);
 		let offset = row * self.count * self.count + col * self.count;
 		let mut found = false;
-		for _ in self.data[offset..(offset + self.count)].iter().filter(|&x| *x) {
+		for _ in self.data[offset..(offset + self.count)]
+		        .iter()
+		        .filter(|&x| *x) {
 			if found {
 				return false;
 			} else {
@@ -214,7 +216,9 @@ impl Board {
 				if self.data[i * self.count + j] {
 					for k in 0..j {
 						if self.data[i * self.count + k] {
-							pb.new_clause().add_literal(i * self.count + j, true).add_literal(i * self.count + k, true);
+							pb.new_clause()
+								.add_literal(i * self.count + j, true)
+								.add_literal(i * self.count + k, true);
 						}
 					}
 				}
@@ -227,9 +231,7 @@ impl Board {
 	pub fn solve(&self) -> Option<Vec<usize>> {
 		if let Some(mut problem) = self.create_problem() {
 			match problem.solve() {
-				SolverResult::Unsat => {
-					None
-				}
+				SolverResult::Unsat => None,
 				SolverResult::Unknown => {
 					assert!(false);
 					None
