@@ -1,12 +1,12 @@
 [package]
-name = "dsat"
+name = "drsat"
 description = "SAT solver"
 version = "0.1.0"
 authors = ["Daniel Schemmel <daniel.schemmel@comsys.rwth-aachen.de>"]
 build = "build.rs"
 
 [lib]
-name = "libdsat"
+name = "libdrsat"
 
 [profile.release]
 opt-level = 3

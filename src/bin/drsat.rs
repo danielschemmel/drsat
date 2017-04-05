@@ -2,11 +2,11 @@
 extern crate clap;
 use clap::{App, AppSettings, SubCommand};
 
-extern crate libdsat;
-use libdsat::{driver, VERSION};
-use libdsat::driver::errors::*;
+extern crate libdrsat;
+use libdrsat::{driver, VERSION};
+use libdrsat::driver::errors::*;
 
-const NAME: &'static str = "dsat";
+const NAME: &'static str = "drsat";
 
 fn gen_cli() -> App<'static, 'static> {
 	App::new(NAME)
@@ -30,11 +30,11 @@ fn print_version() -> Result<()> {
 
 fn run() -> Result<()> {
 	match gen_cli().get_matches().subcommand() {
-		("completion", Some(matches)) => libdsat::driver::completion::run_command(gen_cli(), matches, NAME),
-		("dimacs", Some(matches)) => libdsat::driver::dimacs::main(matches),
-		("npn", Some(matches)) => libdsat::driver::npn::main(matches),
-		("stats", Some(matches)) => libdsat::driver::stats::main(matches),
-		("sudoku", Some(matches)) => libdsat::driver::sudoku::main(matches),
+		("completion", Some(matches)) => libdrsat::driver::completion::run_command(gen_cli(), matches, NAME),
+		("dimacs", Some(matches)) => libdrsat::driver::dimacs::main(matches),
+		("npn", Some(matches)) => libdrsat::driver::npn::main(matches),
+		("stats", Some(matches)) => libdrsat::driver::stats::main(matches),
+		("sudoku", Some(matches)) => libdrsat::driver::sudoku::main(matches),
 		("version", Some(_)) => print_version(),
 		_ => unreachable!(),
 	}

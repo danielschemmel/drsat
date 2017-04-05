@@ -1,5 +1,5 @@
 [root]
-name = "dsat"
+name = "drsat"
 version = "0.1.0"
 dependencies = [
  "bzip2 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",

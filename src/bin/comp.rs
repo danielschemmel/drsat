@@ -1,6 +1,6 @@
-extern crate libdsat;
-use libdsat::driver;
-use libdsat::SolverResult;
+extern crate libdrsat;
+use libdrsat::driver;
+use libdrsat::SolverResult;
 
 use std::env;
 use std::process::exit;

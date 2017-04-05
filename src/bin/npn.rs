@@ -1,9 +1,9 @@
 extern crate clap;
 use clap::{App, AppSettings};
 
-extern crate libdsat;
-use libdsat::{driver, VERSION};
-use libdsat::driver::errors::*;
+extern crate libdrsat;
+use libdrsat::{driver, VERSION};
+use libdrsat::driver::errors::*;
 
 const NAME: &'static str = "npn";
 
