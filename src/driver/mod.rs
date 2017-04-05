@@ -1,5 +1,5 @@
 pub mod comp;
-pub mod completion;
+pub mod drsat;
 pub mod dimacs;
 pub mod errors;
 pub mod npn;
