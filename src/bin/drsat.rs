@@ -15,7 +15,7 @@ fn gen_cli() -> App<'static, 'static> {
 		.setting(AppSettings::ColoredHelp)
 		.setting(AppSettings::GlobalVersion)
 		.setting(AppSettings::SubcommandRequiredElseHelp)
-		.subcommand(driver::drsat::setup_command(SubCommand::with_name("completion")))
+		.subcommand(driver::completion::setup_command(SubCommand::with_name("completion")))
 		.subcommand(driver::dimacs::setup_command(SubCommand::with_name("dimacs")))
 		.subcommand(driver::npn::setup_command(SubCommand::with_name("npn")))
 		.subcommand(driver::stats::setup_command(SubCommand::with_name("stats")))
@@ -30,7 +30,7 @@ fn print_version() -> Result<()> {
 
 fn run() -> Result<()> {
 	match gen_cli().get_matches().subcommand() {
-		("completion", Some(matches)) => libdrsat::driver::drsat::run_command(gen_cli(), matches, NAME),
+		("completion", Some(matches)) => libdrsat::driver::completion::run_command(gen_cli(), matches, NAME),
 		("dimacs", Some(matches)) => libdrsat::driver::dimacs::main(matches),
 		("npn", Some(matches)) => libdrsat::driver::npn::main(matches),
 		("stats", Some(matches)) => libdrsat::driver::stats::main(matches),
