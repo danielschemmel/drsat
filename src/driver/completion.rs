@@ -17,7 +17,7 @@ pub fn gen_arg() -> Arg<'static, 'static> {
 }
 
 pub fn run_command(app: App, matches: &ArgMatches, name: &str) -> Result<()> {
-	print_completion(app, matches.value_of("shell").unwrap(), name)
+	print_completion(app, matches.value_of("completion").unwrap(), name)
 }
 
 pub fn print_completion(mut app: App, shell: &str, name: &str) -> Result<()> {
