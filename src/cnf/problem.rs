@@ -469,12 +469,13 @@ impl<T: fmt::Display> Problem<T> {
 		//println!("[GC {} -> {}]", old, self.clauses.len());
 	}
 
-	pub fn print_model(&self, indent: &str) {
+	pub fn print_model(&self, writer: &mut io::Write, indent: &str) -> io::Result<()> {
 		for (var, name) in self.variables.iter().zip(self.variable_names.iter()) {
 			// FIXME: allow using &self.variables here
 			debug_assert!(var.has_value());
-			println!("{}{}: {}", indent, name, var.get_value());
+			writeln!(writer, "{}{}: {}", indent, name, var.get_value())?;
 		}
+		Ok(())
 	}
 
 	pub fn model(&self) -> Vec<(&T, bool)> {

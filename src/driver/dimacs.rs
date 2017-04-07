@@ -65,7 +65,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 		match result {
 			SolverResult::Sat => {
 				println!("Model:");
-				problem.print_model("  ");
+				problem.print_model(&mut ::std::io::stdout(), "  ")?;
 			}
 			_ => {}
 		}

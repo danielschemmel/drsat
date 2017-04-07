@@ -49,7 +49,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 		SolverResult::Sat => {
 			println!("Result: Satisfiable");
 			println!("Model:");
-			problem.print_model("  ");
+			problem.print_model(&mut ::std::io::stdout(), "  ")?;
 		}
 		SolverResult::Unsat => println!("Result: Unsatisfiable"),
 		SolverResult::Unknown => println!("Result: Unknown"),
