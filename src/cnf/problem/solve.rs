@@ -117,8 +117,14 @@ impl<T: fmt::Display> Problem<T> {
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id()].has_value());
 			self.backjump();
-			self.conflict_lens.add(self.clauses.last().unwrap().len() as usize - 1);
-			self.clauses.last().unwrap().notify_watched(self.clauses.len() - 1, &mut self.variables);
+			self
+				.conflict_lens
+				.add(self.clauses.last().unwrap().len() as usize - 1);
+			self
+				.clauses
+				.last()
+				.unwrap()
+				.notify_watched(self.clauses.len() - 1, &mut self.variables);
 			self.variables[lit.id()].set(!lit.negated(), self.depth, self.clauses.len() - 1);
 			self.applications.push(lit.id());
 			self.propagate()
@@ -126,7 +132,9 @@ impl<T: fmt::Display> Problem<T> {
 	}
 
 	fn subsumption_check(&self, vid: VariableId, marks: &mut IndexedVec<VariableId, bool>) -> bool {
-		for id in self.clauses[self.variables[vid].get_ante()].iter().map(|lit| lit.id()) {
+		for id in self.clauses[self.variables[vid].get_ante()]
+		      .iter()
+		      .map(|lit| lit.id()) {
 			if vid != id && !marks[id] && self.variables[id].get_depth() != 0 {
 				if self.variables[id].get_ante() != ::std::usize::MAX && self.subsumption_check(id, marks) {
 					marks[id] = true;
@@ -172,7 +180,8 @@ impl<T: fmt::Display> Problem<T> {
 	// resets depth to 0 and unsets all variables
 	fn restart(&mut self) {
 		self.depth = 0;
-		for id in self.applications.as_mut_vec().drain(..) { // FIXME: drain only supported after refcast to vec
+		for id in self.applications.as_mut_vec().drain(..) {
+			// FIXME: drain only supported after refcast to vec
 			self.variables[id].unset();
 		}
 	}

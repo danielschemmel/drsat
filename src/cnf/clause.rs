@@ -36,7 +36,11 @@ impl Clause {
 		debug_assert!(literals
 		                .iter()
 		                .all(|lit| variables[lit.id()].has_value()));
-		for (i, depth) in literals.iter().map(|lit| variables[lit.id()].get_depth()).enumerate().map(|(i, depth)| (i as VariableId, depth)) {
+		for (i, depth) in literals
+		      .iter()
+		      .map(|lit| variables[lit.id()].get_depth())
+		      .enumerate()
+		      .map(|(i, depth)| (i as VariableId, depth)) {
 			if !marks[depth] {
 				glue += 1;
 				marks[depth] = true;

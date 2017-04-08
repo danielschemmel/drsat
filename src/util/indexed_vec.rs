@@ -33,7 +33,9 @@ pub struct IndexedVec<Key, Value> {
 	key_type: PhantomData<Key>,
 }
 
-impl<Key, Value> IndexedVec<Key, Value> where Key: USizeCast {
+impl<Key, Value> IndexedVec<Key, Value>
+  where Key: USizeCast
+{
 	pub fn new() -> IndexedVec<Key, Value> {
 		IndexedVec {
 			data: Vec::new(),
@@ -86,7 +88,10 @@ impl<Key, Value> IndexedVec<Key, Value> where Key: USizeCast {
 	}
 }
 
-impl<Key, Value> IndexedVec<Key, Value> where Key: USizeCast, Value: Clone {
+impl<Key, Value> IndexedVec<Key, Value>
+	where Key: USizeCast,
+	      Value: Clone
+{
 	pub fn resize(&mut self, new_len: Key, value: Value) {
 		self.data.resize(Key::to_usize(new_len), value)
 	}

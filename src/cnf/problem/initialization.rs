@@ -20,7 +20,10 @@ impl<T: fmt::Display> Problem<T> {
 			gc_count: 0,
 			variables: variables,
 			variable_names: IndexedVec::from_vec(names),
-			clauses: clauses.into_iter().map(|c| Clause::new(IndexedVec::from_vec(c), 1)).collect(),
+			clauses: clauses
+				.into_iter()
+				.map(|c| Clause::new(IndexedVec::from_vec(c), 1))
+				.collect(),
 			applications: IndexedVec::with_capacity(varcount),
 			irreducible: irreducible,
 			num_conflicts: 0,
