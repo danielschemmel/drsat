@@ -5,7 +5,8 @@ use clap::{ArgMatches, App, AppSettings};
 use super::errors::*;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
-	app.about("Print some internal statistics")
+	app
+		.about("Print some internal statistics")
 		.setting(AppSettings::ColoredHelp)
 }
 

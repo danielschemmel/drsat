@@ -68,8 +68,8 @@ impl Board {
 		let offset = row * self.count * self.count + col * self.count;
 		let mut found = false;
 		for _ in self.data[offset..(offset + self.count)]
-		        .iter()
-		        .filter(|&x| *x) {
+		      .iter()
+		      .filter(|&x| *x) {
 			if found {
 				return false;
 			} else {

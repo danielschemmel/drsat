@@ -10,7 +10,7 @@ pub struct ProblemBuilder<T: ::std::hash::Hash + ::std::cmp::Eq> {
 }
 
 impl<T> ProblemBuilder<T>
-    where T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone
+  where T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone
 {
 	pub fn new() -> ProblemBuilder<T> {
 		ProblemBuilder {
@@ -67,7 +67,7 @@ pub struct ClauseBuilder<'a, T: 'a>
 }
 
 impl<'a, T> ClauseBuilder<'a, T>
-    where T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone
+  where T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone
 {
 	pub fn add_literal(&mut self, name: T, negated: bool) -> &mut Self {
 		let id = self.problembuilder.variable_id(name);

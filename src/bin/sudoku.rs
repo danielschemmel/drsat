@@ -9,13 +9,13 @@ const NAME: &'static str = "sudoku";
 
 fn gen_cli() -> App<'static, 'static> {
 	driver::sudoku::setup_command(App::new(NAME)
-	                                  .version(VERSION)
-	                                  .about("Solve a sudoku puzzle")
-	                                  .setting(AppSettings::ColoredHelp)
-	                                  .setting(AppSettings::GlobalVersion))
+	                                .version(VERSION)
+	                                .about("Solve a sudoku puzzle")
+	                                .setting(AppSettings::ColoredHelp)
+	                                .setting(AppSettings::GlobalVersion))
 			.arg(driver::completion::gen_arg()
-			         .conflicts_with("path")
-			         .long("completion"))
+			       .conflicts_with("path")
+			       .long("completion"))
 }
 
 fn run() -> Result<()> {

@@ -63,7 +63,7 @@ impl<Key, Value> DerefMut for IndexedVec<Key, Value> {
 }
 
 impl<Key, Value> Index<Key> for IndexedVec<Key, Value>
-    where Key: USizeCast
+  where Key: USizeCast
 {
 	type Output = Value;
 
@@ -73,7 +73,7 @@ impl<Key, Value> Index<Key> for IndexedVec<Key, Value>
 }
 
 impl<Key, Value> IndexMut<Key> for IndexedVec<Key, Value>
-    where Key: USizeCast
+  where Key: USizeCast
 {
 	fn index_mut<'a>(&'a mut self, index: Key) -> &'a mut Value {
 		&mut self.data[index.to_usize()]
@@ -81,7 +81,7 @@ impl<Key, Value> IndexMut<Key> for IndexedVec<Key, Value>
 }
 
 impl<Key, Value> fmt::Debug for IndexedVec<Key, Value>
-    where Value: fmt::Debug
+  where Value: fmt::Debug
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		(&self.data as &fmt::Debug).fmt(f)
