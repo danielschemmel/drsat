@@ -38,8 +38,7 @@ impl<T: fmt::Display> Problem<T> {
 
 	pub fn print_conflict_histo(&self, writer: &mut io::Write) -> io::Result<()> {
 		writeln!(writer,
-		         "{} conflicts: {}",
-		         self.num_conflicts,
+		         "conflicts: {}",
 		         self.conflict_lens)?;
 		let mut x = 0u64;
 		for i in 0..self.conflict_lens.bins.len() {

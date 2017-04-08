@@ -20,6 +20,8 @@ pub use self::variable_id_impl::{VariableId, VARIABLE_ID_MAX};
 #[derive(Debug)]
 pub struct Variable {
 	q: f64,
+	assigned: u64,
+	participated: u64,
 	watchlists: [Vec<usize>; 2],
 	ante: usize,
 	depth: VariableId,
@@ -34,6 +36,8 @@ impl Variable {
 			depth: VARIABLE_ID_MAX,
 			value: false,
 			q: 0.0,
+			assigned: 0,
+			participated: 0,
 		}
 	}
 
@@ -58,14 +62,20 @@ impl Variable {
 		}
 	}
 
-	pub fn set(&mut self, value: bool, depth: VariableId, ante: usize) {
+	pub fn set(&mut self, value: bool, depth: VariableId, ante: usize, learnt_counter: u64) {
 		self.ante = ante;
 		self.depth = depth;
 		self.value = value;
+		self.assigned = learnt_counter;
+		self.participated = 0;
 	}
 
-	pub fn unset(&mut self) {
+	pub fn unset(&mut self, learnt_counter: u64, alpha: f64) {
 		self.depth = VARIABLE_ID_MAX;
+		let interval = learnt_counter - self.assigned;
+		if interval != 0 {
+			self.q = (1.0 - alpha) * self.q + alpha * (self.participated as f64 / interval as f64);
+		}
 	}
 
 	pub fn enable(&mut self, depth: VariableId) {
@@ -114,5 +124,9 @@ impl Variable {
 
 	pub fn q_mut(&mut self) -> &mut f64 {
 		&mut self.q
+	}
+
+	pub fn participate(&mut self) {
+		self.participated += 1;
 	}
 }

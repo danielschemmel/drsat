@@ -69,7 +69,7 @@ pub fn precompute(mut variables: &mut IndexedVec<VariableId, Variable>, mut clau
 							return SolverResult::Unsat;
 						}
 					} else {
-						var.set(!lit.negated(), 0, ::std::usize::MAX);
+						var.set(!lit.negated(), 0, ::std::usize::MAX, 0);
 						w.push(lit.id());
 					}
 					clauses.swap_remove(ci);

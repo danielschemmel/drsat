@@ -15,17 +15,13 @@ impl<T: fmt::Display> Problem<T> {
 		let mut gc_pos: u32 = 0;
 		let mut conflict: Option<usize> = None;
 		loop {
-			self.update_q(&conflict);
 			if let Some(cid) = conflict {
 				if self.depth == 0 {
 					return SolverResult::Unsat;
 				}
-				if self.alpha > 0.06 {
-					self.alpha -= 1e-6;
-				}
 				gc_pos += 1;
-				self.num_conflicts += 1;
 				let lits = self.learn(cid);
+				self.update_q(&lits);
 				conflict = self.propagate_learned(lits);
 			} else {
 				if self.active_variables == self.applications.len() {
@@ -46,10 +42,7 @@ impl<T: fmt::Display> Problem<T> {
 
 	fn learn(&mut self, mut cid: usize) -> IndexedVec<VariableId, Literal> {
 		debug_assert!(self.depth > 0);
-		for lit in self.clauses[cid].iter() {
-			self.last_conflict[lit.id()] = self.num_conflicts;
-			debug_assert!(self.variables[lit.id()].has_value());
-		}
+		debug_assert!(self.clauses[cid].iter().map(|lit| &self.variables[lit.id()]).all(|v| v.has_value()));
 		debug_assert!(self.clauses[cid]
 		                .iter()
 		                .map(|lit| self.variables[lit.id()].get_depth())
@@ -105,7 +98,7 @@ impl<T: fmt::Display> Problem<T> {
 			self.restart();
 			self.conflict_lens.add(0);
 			debug_assert!(!self.variables[lit.id()].has_value());
-			self.variables[lit.id()].set(!lit.negated(), self.depth, ::std::usize::MAX);
+			self.variables[lit.id()].set(!lit.negated(), self.depth, ::std::usize::MAX, self.learnt_counter);
 			self.applications.push(lit.id());
 			let conflict = self.propagate();
 			self.active_variables -= self.applications.len();
@@ -125,7 +118,7 @@ impl<T: fmt::Display> Problem<T> {
 				.last()
 				.unwrap()
 				.notify_watched(self.clauses.len() - 1, &mut self.variables);
-			self.variables[lit.id()].set(!lit.negated(), self.depth, self.clauses.len() - 1);
+			self.variables[lit.id()].set(!lit.negated(), self.depth, self.clauses.len() - 1, self.learnt_counter);
 			self.applications.push(lit.id());
 			self.propagate()
 		}
@@ -172,7 +165,7 @@ impl<T: fmt::Display> Problem<T> {
 			if self.depth == var.get_depth() {
 				break;
 			}
-			var.unset();
+			var.unset(self.learnt_counter, self.alpha);
 			self.applications.pop();
 		}
 	}
@@ -181,21 +174,18 @@ impl<T: fmt::Display> Problem<T> {
 	fn restart(&mut self) {
 		self.depth = 0;
 		for id in self.applications.as_mut_vec().drain(..) {
-			// FIXME: drain only supported after refcast to vec
-			self.variables[id].unset();
+			self.variables[id].unset(self.learnt_counter, self.alpha);
 		}
 	}
 
-	fn update_q(&mut self, conflict: &Option<usize>) {
-		let multiplier = if conflict.is_some() {
-			self.alpha
-		} else {
-			0.9 * self.alpha
-		};
-		let nalpha = 1.0 - self.alpha;
-		for id in self.plays.as_mut_vec().drain(..) {
-			let q = self.variables[id].q_mut();
-			*q = nalpha * *q + multiplier / ((self.num_conflicts - self.last_conflict[id] + 1) as f64); // FIXME: explicit conversion is fugly
+	fn update_q(&mut self, lits: &IndexedVec<VariableId, Literal>) {
+		self.learnt_counter += 1;
+		for id in lits.iter().map(|lit| lit.id()) {
+			self.variables[id].participate();
+			// FIXME: this omits variables on the reasoning side that do not make it into the final learnt clause
+		}
+		if self.alpha > 0.06 {
+			self.alpha -= 1e-6;
 		}
 	}
 
@@ -208,7 +198,6 @@ impl<T: fmt::Display> Problem<T> {
 			.max_by(|&(_, ref a), &(_, ref b)| a.q().partial_cmp(b.q()).unwrap())
 			.unwrap()
 			.0 as VariableId; // FIXME: get rid of the conversion
-		self.plays.push(choice);
 		self.depth += 1;
 		self.variables[choice].enable(self.depth);
 		self.applications.push(choice);
@@ -231,10 +220,9 @@ impl<T: fmt::Display> Problem<T> {
 						Apply::Unsat => return Some(cid),
 						Apply::Unit(lit) => {
 							debug_assert!(!self.variables[lit.id()].has_value());
-							self.variables[lit.id()].set(!lit.negated(), self.depth, cid);
+							self.variables[lit.id()].set(!lit.negated(), self.depth, cid, self.learnt_counter);
 							clause.update_glue(&mut self.variables, self.depth);
 							self.applications.push(lit.id());
-							self.plays.push(lit.id());
 						}
 					}
 					let clauses = &self.variables[id].get_clauses(val);
