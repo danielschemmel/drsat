@@ -12,12 +12,16 @@ The currently supported frontends are:
 Features of the core SAT solver:
 - Context Driven Clause Learning (CDCL) solver for Conjunctive Normal Form (CNF) SAT queries
 - Two watched literals clause watchlists
-- Geometric garbage collection based on clause glues
-- Geometric restarts (in combination with garbage collection)
+- Geometric learnt clause deletion based on clause glues
+- Geometric restarts (in conjunction with learnt clause deletion)
 - Learnt clause minimization
 - Phase saving
 - Conflict History-Based (CHB) branching heuristic, a variant on the Exponential Recency Weighted Average (ERWA) branching heuristic
 - Initialization of branching scores based on static heuristic
 - Basic preprocessing
+
+Unlike most state of the art SAT solvers such as minisat or lingeling (and their various derivatives), drsat is written in pure Rust. When porting the original C++ version to Rust in January of 2017, unscientific, exploratory measurements gave a roughly 15% decrease in performance (note that both compilers as well as drsat itself have changed - and hopefully improved - since then). Most of that cost probably comes from runtime bounds checking.
+
+While drsat itself is an original program not derived from any other implementation, its algorithms are of course mostly taken from research published by other researchers.
 
 (c) 2017 Daniel Schemmel, all rights reserved
