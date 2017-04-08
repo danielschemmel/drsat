@@ -19,3 +19,5 @@ Features of the core SAT solver:
 - Conflict History-Based (CHB) branching heuristic, a variant on the Exponential Recency Weighted Average (ERWA) branching heuristic
 - Initialization of branching scores based on static heuristic
 - Basic preprocessing
+
+(c) by Daniel Schemmel, unlicensed for any use
