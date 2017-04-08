@@ -10,8 +10,6 @@ pub use self::problem::Problem;
 mod problembuilder;
 pub use self::problembuilder::ProblemBuilder;
 
-mod precompute;
-
 pub mod util;
 
 pub mod variable;
