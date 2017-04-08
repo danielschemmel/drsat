@@ -23,7 +23,7 @@ fn print(f: &mut Write) -> Result<()> {
 	writeln!(f, "")?;
 
 	writeln!(f, "CNF Problem stats:")?;
-	::cnf::problem::print_stats(f, "  ")?;
+	::cnf::util::print_stats(f, "  ")?;
 
 	Ok(())
 }
