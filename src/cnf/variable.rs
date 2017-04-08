@@ -78,9 +78,11 @@ impl Variable {
 		}
 	}
 
-	pub fn enable(&mut self, depth: VariableId) {
+	pub fn enable(&mut self, depth: VariableId, learnt_counter: u64) {
 		self.ante = ::std::usize::MAX;
 		self.depth = depth;
+		self.assigned = learnt_counter;
+		self.touched = 0;
 	}
 
 	pub fn get_depth(&self) -> VariableId {

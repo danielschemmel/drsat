@@ -218,7 +218,7 @@ impl<T: fmt::Display> Problem<T> {
 			.unwrap()
 			.0 as VariableId; // FIXME: get rid of the conversion
 		self.depth += 1;
-		self.variables[choice].enable(self.depth);
+		self.variables[choice].enable(self.depth, self.learnt_counter);
 		self.applications.push(choice);
 	}
 
