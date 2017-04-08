@@ -20,4 +20,4 @@ Features of the core SAT solver:
 - Initialization of branching scores based on static heuristic
 - Basic preprocessing
 
-(c) by Daniel Schemmel, unlicensed for any use
+(c) 2017 Daniel Schemmel, all rights reserved
