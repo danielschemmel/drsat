@@ -183,18 +183,17 @@ impl<T: fmt::Display> Problem<T> {
 		let mut marks = IndexedVec::<VariableId, bool>::new();
 		marks.resize(self.variables.len(), false);
 		for id in lits.iter().map(|lit| lit.id()) {
-			self.variables[id].participate();
-			// FIXME: this omits variables on the conflict side that do not make it into the final learnt clause
-			marks[id] = true;
-		}
-		// we need to do a full sweep over the lits to add all marks first
-		for id in lits.iter().map(|lit| lit.id()) {
+			if !marks[id] {
+				marks[id] = true;
+				self.variables[id].touch();
+				// FIXME: this omits variables on the conflict side that do not make it into the final learnt clause
+			}
 			let ante = self.variables[id].get_ante();
 			if ante != ::std::usize::MAX {
 				for id in self.clauses[ante].iter().map(|lit| lit.id()) {
 					if !marks[id] {
 						marks[id] = true;
-						self.variables[id].reason();
+						self.variables[id].touch();
 					}
 				}
 			}
