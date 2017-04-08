@@ -4,9 +4,9 @@ use super::{Literal, Variable, VariableId};
 
 #[derive(Debug)]
 pub struct Clause {
-	literals: Vec<Literal>,
-	watched: [usize; 2],
-	glue: usize,
+	literals: IndexedVec<VariableId, Literal>,
+	watched: [VariableId; 2],
+	glue: VariableId,
 }
 
 pub enum Apply {
@@ -16,7 +16,7 @@ pub enum Apply {
 }
 
 impl Clause {
-	pub fn new(literals: Vec<Literal>, glue: usize) -> Clause {
+	pub fn new(literals: IndexedVec<VariableId, Literal>, glue: VariableId) -> Clause {
 		Clause {
 			literals: literals,
 			watched: [0, 1],
@@ -24,22 +24,23 @@ impl Clause {
 		}
 	}
 
-	pub fn from_learned(mut literals: Vec<Literal>, variables: &IndexedVec<VariableId, Variable>, max_depth: usize) -> (usize, Literal, Clause) {
+	pub fn from_learned(mut literals: IndexedVec<VariableId, Literal>, variables: &IndexedVec<VariableId, Variable>, max_depth: VariableId) -> (VariableId, Literal, Clause) {
 		literals.sort();
-		let mut marks = Vec::<bool>::new();
+		let mut marks = IndexedVec::<VariableId, bool>::new();
 		marks.resize(max_depth + 1, false);
-		let mut glue: usize = 0;
-		let mut da: usize = 0;
-		let mut pa: usize = 0;
-		let mut db: usize = 0;
-		let mut pb: usize = 0;
+		let mut glue = 0;
+		let mut da = 0;
+		let mut pa = 0;
+		let mut db = 0;
+		let mut pb = 0;
 		debug_assert!(literals
 		                .iter()
 		                .all(|lit| variables[lit.id()].has_value()));
 		for (i, depth) in literals
 		      .iter()
 		      .map(|lit| variables[lit.id()].get_depth())
-		      .enumerate() {
+		      .enumerate()
+		      .map(|(i, depth)| (i as VariableId, depth)) {
 			if !marks[depth] {
 				glue += 1;
 				marks[depth] = true;
@@ -78,13 +79,13 @@ impl Clause {
 		Ok(())
 	}
 
-	pub fn update_glue(&mut self, variables: &IndexedVec<VariableId, Variable>, max_depth: usize) {
+	pub fn update_glue(&mut self, variables: &IndexedVec<VariableId, Variable>, max_depth: VariableId) {
 		if self.glue <= 2 {
 			return;
 		}
-		let mut marks = Vec::<bool>::new();
+		let mut marks = IndexedVec::<VariableId, bool>::new();
 		marks.resize(max_depth + 1, false);
-		let mut glue: usize = 0;
+		let mut glue = 0;
 		for depth in self
 		      .literals
 		      .iter()
@@ -101,11 +102,11 @@ impl Clause {
 		self.glue = glue;
 	}
 
-	pub fn get_glue(&self) -> usize {
+	pub fn get_glue(&self) -> VariableId {
 		self.glue
 	}
 
-	pub fn len(&self) -> usize {
+	pub fn len(&self) -> VariableId {
 		self.literals.len()
 	}
 
@@ -114,9 +115,9 @@ impl Clause {
 	pub fn initialize_watched(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>) {
 		debug_assert!(self.literals.len() >= 2);
 		debug_assert!(self.literals[0] < self.literals[1]); // literals must already be sorted by the precomputation step!
-		let mut a: usize = 0;
+		let mut a = 0;
 		let mut sa = ::std::usize::MAX;
-		let mut b: usize = 0;
+		let mut b = 0;
 		let mut sb = ::std::usize::MAX;
 		for i in 0..self.literals.len() {
 			let lit = self.literals[i];
@@ -227,7 +228,7 @@ impl Clause {
 		}
 	}
 
-	fn percolate_sat(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>, start: usize, mut pos: usize, lit: Literal) {
+	fn percolate_sat(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>, start: VariableId, mut pos: VariableId, lit: Literal) {
 		let mut mind = variables[lit.id()].get_depth();
 		let mut i = pos;
 		loop {

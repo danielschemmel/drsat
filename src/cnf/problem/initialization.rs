@@ -8,24 +8,27 @@ use SolverResult;
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn new(names: Vec<T>, mut clauses: Vec<Vec<Literal>>) -> Problem<T> {
-		let varcount = names.len();
+		let varcount = names.len() as VariableId;
 		let mut variables = IndexedVec::from_vec((0..varcount).map(|_| Variable::new()).collect());
 		let solution = super::precompute::precompute(&mut variables, &mut clauses);
 		let irreducible = clauses.len();
-		let mut last_conflict = Vec::new();
+		let mut last_conflict = IndexedVec::new();
 		last_conflict.resize(varcount, 0);
-		let active_variables = variables.iter().filter(|var| !var.has_value()).count();
+		let active_variables = variables.iter().filter(|var| !var.has_value()).count() as VariableId;
 		let mut problem = Problem {
 			alpha: 0.4,
 			gc_count: 0,
 			variables: variables,
 			variable_names: IndexedVec::from_vec(names),
-			clauses: clauses.into_iter().map(|c| Clause::new(c, 1)).collect(),
-			applications: Vec::with_capacity(varcount),
+			clauses: clauses
+				.into_iter()
+				.map(|c| Clause::new(IndexedVec::from_vec(c), 1))
+				.collect(),
+			applications: IndexedVec::with_capacity(varcount),
 			irreducible: irreducible,
 			num_conflicts: 0,
 			last_conflict: last_conflict,
-			plays: Vec::with_capacity(varcount),
+			plays: IndexedVec::with_capacity(varcount),
 			depth: 0,
 			active_variables: active_variables,
 			conflict_lens: Histo::new(),

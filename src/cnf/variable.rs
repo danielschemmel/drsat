@@ -1,19 +1,28 @@
 // Proof that u32 is large enough:
 // 1 bit is lost due to literal compression, meaning that 2 billion variables are possible
-// Variables have a fixed cost of at least 80 byte, so just storing 2 billion variables will take >200 GB.
-// Additionally, any useful variable needs to be in at least 2 clauses, costing another 16GB (32GB when using u64)
+// Variables have a fixed cost of at least 72 byte, so just storing 2 billion variables will take around 150 GB.
+// Additionally, any useful variable needs to be in at least 2 clauses, costing another 16 GB
 // Too bad, I am not convinced.
 #[cfg(feature = "small_variable_ids")]
-pub type VariableId = u32;
+mod variable_id_impl {
+	pub type VariableId = u32;
+	pub const VARIABLE_ID_MAX: VariableId = ::std::u32::MAX;
+}
+
 #[cfg(not(feature = "small_variable_ids"))]
-pub type VariableId = usize;
+mod variable_id_impl {
+	pub type VariableId = usize;
+	pub const VARIABLE_ID_MAX: VariableId = ::std::usize::MAX;
+}
+
+pub use self::variable_id_impl::{VariableId, VARIABLE_ID_MAX};
 
 #[derive(Debug)]
 pub struct Variable {
 	q: f64,
 	watchlists: [Vec<usize>; 2],
 	ante: usize,
-	depth: usize,
+	depth: VariableId,
 	value: bool,
 }
 
@@ -22,14 +31,14 @@ impl Variable {
 		Variable {
 			watchlists: [Vec::new(), Vec::new()],
 			ante: ::std::usize::MAX,
-			depth: ::std::usize::MAX,
+			depth: VARIABLE_ID_MAX,
 			value: false,
 			q: 0.0,
 		}
 	}
 
 	pub fn has_value(&self) -> bool {
-		self.depth != ::std::usize::MAX
+		self.depth != VARIABLE_ID_MAX
 	}
 
 	pub fn get_value(&self) -> bool {
@@ -42,14 +51,14 @@ impl Variable {
 	}
 
 	pub fn value(&self) -> Option<bool> {
-		if self.depth == ::std::usize::MAX {
+		if self.depth == VARIABLE_ID_MAX {
 			None
 		} else {
 			Some(self.value)
 		}
 	}
 
-	pub fn set(&mut self, value: bool, depth: usize, ante: usize) {
+	pub fn set(&mut self, value: bool, depth: VariableId, ante: usize) {
 		self.value = value;
 		self.depth = depth;
 		self.ante = ante;
@@ -57,15 +66,15 @@ impl Variable {
 
 	pub fn unset(&mut self) {
 		self.ante = ::std::usize::MAX;
-		self.depth = ::std::usize::MAX;
+		self.depth = VARIABLE_ID_MAX;
 	}
 
-	pub fn enable(&mut self, depth: usize) {
+	pub fn enable(&mut self, depth: VariableId) {
 		debug_assert!(self.ante == ::std::usize::MAX);
 		self.depth = depth;
 	}
 
-	pub fn get_depth(&self) -> usize {
+	pub fn get_depth(&self) -> VariableId {
 		self.depth
 	}
 
