@@ -13,7 +13,7 @@ pub use self::problembuilder::ProblemBuilder;
 pub mod util;
 
 pub mod variable;
-pub use self::variable::{Variable, VariableId};
+pub use self::variable::{Variable, VariableId, VARIABLE_ID_MAX};
 
 #[cfg(test)]
 mod tests;

@@ -1,6 +1,8 @@
 use std::fmt;
 
-use super::{Clause, Literal, Problem, VariableId};
+use util::IndexedVec;
+
+use super::{Clause, Literal, Problem, VariableId, VARIABLE_ID_MAX};
 use cnf::clause::Apply;
 use SolverResult;
 
@@ -42,10 +44,10 @@ impl<T: fmt::Display> Problem<T> {
 		}
 	}
 
-	fn learn(&mut self, mut cid: usize) -> Vec<Literal> {
+	fn learn(&mut self, mut cid: usize) -> IndexedVec<VariableId, Literal> {
 		debug_assert!(self.depth > 0);
 		for lit in self.clauses[cid].iter() {
-			self.last_conflict[lit.id() as usize] = self.num_conflicts;
+			self.last_conflict[lit.id()] = self.num_conflicts;
 			debug_assert!(self.variables[lit.id()].has_value());
 		}
 		debug_assert!(self.clauses[cid]
@@ -53,28 +55,28 @@ impl<T: fmt::Display> Problem<T> {
 		                .map(|lit| self.variables[lit.id()].get_depth())
 		                .max()
 		                .unwrap() == self.depth);
-		let mut marks = Vec::<bool>::new();
-		marks.resize(self.variables.len() as usize, false);
-		let mut lits = Vec::<Literal>::new();
-		let mut queue = Vec::<usize>::with_capacity(self.clauses[cid].len());
-		let mut implicated = ::std::usize::MAX;
+		let mut marks = IndexedVec::<VariableId, bool>::new();
+		marks.resize(self.variables.len(), false);
+		let mut lits = IndexedVec::<VariableId, Literal>::new();
+		let mut queue = Vec::<usize>::with_capacity(self.clauses[cid].len() as usize);
+		let mut implicated = VARIABLE_ID_MAX;
 		loop {
 			for (id, negated) in self.clauses[cid].iter().map(|lit| lit.disassemble()) {
 				debug_assert!(self.variables[id].has_value());
 				debug_assert!(self.variables[id].get_depth() <= self.depth);
-				if !marks[id as usize] {
-					marks[id as usize] = true;
+				if !marks[id] {
+					marks[id] = true;
 					let d = self.variables[id].get_depth();
 					if d == self.depth {
 						let ante = self.variables[id].get_ante();
 						if ante == ::std::usize::MAX {
-							if implicated != ::std::usize::MAX {
+							if implicated != VARIABLE_ID_MAX {
 								queue.push(self.variables[lits[implicated].id()].get_ante());
 								lits.swap_remove(implicated);
 							}
 							implicated = lits.len();
 							lits.push(Literal::new(id, negated));
-						} else if implicated != ::std::usize::MAX {
+						} else if implicated != VARIABLE_ID_MAX {
 							queue.push(ante);
 						} else {
 							implicated = lits.len();
@@ -90,12 +92,12 @@ impl<T: fmt::Display> Problem<T> {
 				Some(t) => cid = t,
 			}
 		}
-		debug_assert!(implicated != ::std::usize::MAX);
+		debug_assert!(implicated != VARIABLE_ID_MAX);
 		self.minimize(&mut lits, marks);
 		lits
 	}
 
-	fn propagate_learned(&mut self, lits: Vec<Literal>) -> Option<usize> {
+	fn propagate_learned(&mut self, lits: IndexedVec<VariableId, Literal>) -> Option<usize> {
 		if lits.len() == 1 {
 			let lit = lits[0];
 			debug_assert!(self.variables[lit.id()].has_value());
@@ -115,27 +117,19 @@ impl<T: fmt::Display> Problem<T> {
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id()].has_value());
 			self.backjump();
-			self
-				.conflict_lens
-				.add(self.clauses.last().unwrap().len() - 1);
-			self
-				.clauses
-				.last()
-				.unwrap()
-				.notify_watched(self.clauses.len() - 1, &mut self.variables);
+			self.conflict_lens.add(self.clauses.last().unwrap().len() as usize - 1);
+			self.clauses.last().unwrap().notify_watched(self.clauses.len() - 1, &mut self.variables);
 			self.variables[lit.id()].set(!lit.negated(), self.depth, self.clauses.len() - 1);
 			self.applications.push(lit.id());
 			self.propagate()
 		}
 	}
 
-	fn subsumption_check(&self, vid: VariableId, marks: &mut Vec<bool>) -> bool {
-		for id in self.clauses[self.variables[vid].get_ante()]
-		      .iter()
-		      .map(|lit| lit.id()) {
-			if vid != id && !marks[id as usize] && self.variables[id].get_depth() != 0 {
+	fn subsumption_check(&self, vid: VariableId, marks: &mut IndexedVec<VariableId, bool>) -> bool {
+		for id in self.clauses[self.variables[vid].get_ante()].iter().map(|lit| lit.id()) {
+			if vid != id && !marks[id] && self.variables[id].get_depth() != 0 {
 				if self.variables[id].get_ante() != ::std::usize::MAX && self.subsumption_check(id, marks) {
-					marks[id as usize] = true;
+					marks[id] = true;
 				} else {
 					return false;
 				}
@@ -144,8 +138,8 @@ impl<T: fmt::Display> Problem<T> {
 		true
 	}
 
-	pub fn minimize(&self, lits: &mut Vec<Literal>, mut marks: Vec<bool>) {
-		let mut i: usize = 0;
+	pub fn minimize(&self, lits: &mut IndexedVec<VariableId, Literal>, mut marks: IndexedVec<VariableId, bool>) {
+		let mut i = 0;
 		while i < lits.len() {
 			let ref var = self.variables[lits[i].id()];
 			if var.get_ante() != ::std::usize::MAX && var.get_depth() != self.depth {
@@ -178,7 +172,7 @@ impl<T: fmt::Display> Problem<T> {
 	// resets depth to 0 and unsets all variables
 	fn restart(&mut self) {
 		self.depth = 0;
-		for id in self.applications.drain(..) {
+		for id in self.applications.as_mut_vec().drain(..) { // FIXME: drain only supported after refcast to vec
 			self.variables[id].unset();
 		}
 	}
@@ -190,9 +184,9 @@ impl<T: fmt::Display> Problem<T> {
 			0.9 * self.alpha
 		};
 		let nalpha = 1.0 - self.alpha;
-		for id in self.plays.drain(..) {
+		for id in self.plays.as_mut_vec().drain(..) {
 			let q = self.variables[id].q_mut();
-			*q = nalpha * *q + multiplier / ((self.num_conflicts - self.last_conflict[id as usize] + 1) as f64); // FIXME: explicit conversion is fugly
+			*q = nalpha * *q + multiplier / ((self.num_conflicts - self.last_conflict[id] + 1) as f64); // FIXME: explicit conversion is fugly
 		}
 	}
 
@@ -252,8 +246,8 @@ impl<T: fmt::Display> Problem<T> {
 				}
 			}
 			ai += 1;
-			if let Some(&val) = self.applications.get(ai) {
-				id = val;
+			if ai < self.applications.len() {
+				id = self.applications[ai];
 			} else {
 				break;
 			}

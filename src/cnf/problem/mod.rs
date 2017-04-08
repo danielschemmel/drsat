@@ -2,7 +2,7 @@ use std::fmt;
 
 use util::{Histo, IndexedVec};
 
-use super::{Clause, Literal, Variable, VariableId};
+use super::{Clause, Literal, Variable, VariableId, VARIABLE_ID_MAX};
 use SolverResult;
 
 #[derive(Debug)]
@@ -12,13 +12,13 @@ pub struct Problem<T: fmt::Display> {
 	variables: IndexedVec<VariableId, Variable>,
 	variable_names: IndexedVec<VariableId, T>,
 	clauses: Vec<Clause>,
-	applications: Vec<VariableId>,
+	applications: IndexedVec<VariableId, VariableId>,
 	irreducible: usize,
-	num_conflicts: usize,
-	last_conflict: Vec<usize>,
-	plays: Vec<VariableId>,
-	depth: usize,
-	active_variables: usize,
+	num_conflicts: u64,
+	last_conflict: IndexedVec<VariableId, u64>,
+	plays: IndexedVec<VariableId, VariableId>,
+	depth: VariableId,
+	active_variables: VariableId,
 	conflict_lens: Histo,
 	solution: SolverResult,
 }

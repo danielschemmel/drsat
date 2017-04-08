@@ -33,7 +33,21 @@ pub struct IndexedVec<Key, Value> {
 	key_type: PhantomData<Key>,
 }
 
-impl<Key, Value> IndexedVec<Key, Value> {
+impl<Key, Value> IndexedVec<Key, Value> where Key: USizeCast {
+	pub fn new() -> IndexedVec<Key, Value> {
+		IndexedVec {
+			data: Vec::new(),
+			key_type: PhantomData,
+		}
+	}
+
+	pub fn with_capacity(capacity: Key) -> IndexedVec<Key, Value> {
+		IndexedVec {
+			data: Vec::with_capacity(Key::to_usize(capacity)),
+			key_type: PhantomData,
+		}
+	}
+
 	pub fn from_vec(vars: Vec<Value>) -> IndexedVec<Key, Value> {
 		IndexedVec {
 			data: vars,
@@ -45,6 +59,36 @@ impl<Key, Value> IndexedVec<Key, Value> {
 		where Key: USizeCast
 	{
 		Key::from_usize(self.data.len())
+	}
+
+	pub fn clear(&mut self) {
+		self.data.clear()
+	}
+
+	pub fn push(&mut self, value: Value) {
+		self.data.push(value)
+	}
+
+	pub fn pop(&mut self) -> Option<Value> {
+		self.data.pop()
+	}
+
+	pub fn swap_remove(&mut self, index: Key) -> Value {
+		self.data.swap_remove(Key::to_usize(index))
+	}
+
+	pub fn as_vec(&self) -> &Vec<Value> {
+		&self.data
+	}
+
+	pub fn as_mut_vec(&mut self) -> &mut Vec<Value> {
+		&mut self.data
+	}
+}
+
+impl<Key, Value> IndexedVec<Key, Value> where Key: USizeCast, Value: Clone {
+	pub fn resize(&mut self, new_len: Key, value: Value) {
+		self.data.resize(Key::to_usize(new_len), value)
 	}
 }
 
