@@ -50,12 +50,14 @@ fn format_version(version: &str) -> String {
 
 fn repository_description<P: AsRef<Path>>(dir: P) -> Result<String> {
 	let repo = Repository::discover(dir)?;
-	let desc = repo.describe(&DescribeOptions::new()
-		                          .describe_tags()
-		                          .show_commit_oid_as_fallback(true))?;
-	let content = desc.format(Some(DescribeFormatOptions::new()
-		                               .dirty_suffix(".+")
-		                               .abbreviated_size(16)))?;
+	let desc = repo
+		.describe(&DescribeOptions::new()
+		             .describe_tags()
+		             .show_commit_oid_as_fallback(true))?;
+	let content = desc
+		.format(Some(DescribeFormatOptions::new()
+		               .dirty_suffix(".+")
+		               .abbreviated_size(16)))?;
 	Ok(content)
 }
 

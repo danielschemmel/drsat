@@ -158,8 +158,8 @@ impl<T: fmt::Display> Problem<T> {
 			let len = self.clauses[i].len();
 			for (id, negated) in self.clauses[i].iter().map(|lit| lit.disassemble()) {
 				*counters[id as usize][negated as usize]
-				     .entry(len as i32)
-				     .or_insert(0) += 1; // FIXME: this cast is only mostly safe
+				   .entry(len as i32)
+				   .or_insert(0) += 1; // FIXME: this cast is only mostly safe
 			}
 			self.clauses[i].initialize_watched(i, &mut self.variables);
 		}
@@ -185,12 +185,13 @@ impl<T: fmt::Display> Problem<T> {
 				*self.variables[id as VariableId].q_mut() = lo + hi;
 			}
 		}
-		let m: f64 = *self.variables
-		                  .iter()
-		                  .filter(|var| !var.has_value())
-		                  .map(|v| v.q())
-		                  .max_by(|a, b| a.partial_cmp(b).unwrap())
-		                  .unwrap();
+		let m: f64 = *self
+		                .variables
+		                .iter()
+		                .filter(|var| !var.has_value())
+		                .map(|v| v.q())
+		                .max_by(|a, b| a.partial_cmp(b).unwrap())
+		                .unwrap();
 		for v in self.variables.iter_mut() {
 			*v.q_mut() /= m;
 		}
@@ -240,10 +241,10 @@ impl<T: fmt::Display> Problem<T> {
 			debug_assert!(self.variables[lit.id()].has_value());
 		}
 		debug_assert!(self.clauses[cid]
-		                  .iter()
-		                  .map(|lit| self.variables[lit.id()].get_depth())
-		                  .max()
-		                  .unwrap() == self.depth);
+		                .iter()
+		                .map(|lit| self.variables[lit.id()].get_depth())
+		                .max()
+		                .unwrap() == self.depth);
 		let mut marks = Vec::<bool>::new();
 		marks.resize(self.variables.len() as usize, false);
 		let mut lits = Vec::<Literal>::new();
@@ -306,9 +307,11 @@ impl<T: fmt::Display> Problem<T> {
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id()].has_value());
 			self.backjump();
-			self.conflict_lens
+			self
+				.conflict_lens
 				.add(self.clauses.last().unwrap().len() - 1);
-			self.clauses
+			self
+				.clauses
 				.last()
 				.unwrap()
 				.notify_watched(self.clauses.len() - 1, &mut self.variables);
@@ -320,8 +323,8 @@ impl<T: fmt::Display> Problem<T> {
 
 	fn subsumption_check(&self, vid: VariableId, marks: &mut Vec<bool>) -> bool {
 		for id in self.clauses[self.variables[vid].get_ante()]
-		        .iter()
-		        .map(|lit| lit.id()) {
+		      .iter()
+		      .map(|lit| lit.id()) {
 			if vid != id && !marks[id as usize] && self.variables[id].get_depth() != 0 {
 				if self.variables[id].get_ante() != ::std::usize::MAX && self.subsumption_check(id, marks) {
 					marks[id as usize] = true;
@@ -386,7 +389,8 @@ impl<T: fmt::Display> Problem<T> {
 	}
 
 	fn choose(&mut self) {
-		let choice = self.variables
+		let choice = self
+			.variables
 			.iter()
 			.enumerate()
 			.filter(|&(_, ref var)| !var.has_value())
