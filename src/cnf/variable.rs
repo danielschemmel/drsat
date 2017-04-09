@@ -59,18 +59,17 @@ impl Variable {
 	}
 
 	pub fn set(&mut self, value: bool, depth: VariableId, ante: usize) {
-		self.value = value;
-		self.depth = depth;
 		self.ante = ante;
+		self.depth = depth;
+		self.value = value;
 	}
 
 	pub fn unset(&mut self) {
-		self.ante = ::std::usize::MAX;
 		self.depth = VARIABLE_ID_MAX;
 	}
 
 	pub fn enable(&mut self, depth: VariableId) {
-		debug_assert!(self.ante == ::std::usize::MAX);
+		self.ante = ::std::usize::MAX;
 		self.depth = depth;
 	}
 
@@ -79,6 +78,7 @@ impl Variable {
 	}
 
 	pub fn get_ante(&self) -> usize {
+		debug_assert!(self.has_value());
 		self.ante
 	}
 
