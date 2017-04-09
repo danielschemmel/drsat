@@ -1,8 +1,11 @@
+use cnf::Literal;
+
 // Proof that u32 is large enough:
 // 1 bit is lost due to literal compression, meaning that 2 billion variables are possible
-// Variables have a fixed cost of at least 72 byte, so just storing 2 billion variables will take around 150 GB.
-// Additionally, any useful variable needs to be in at least 2 clauses, costing another 16 GB
-// Too bad, I am not convinced.
+// Variables have a fixed cost of at least 120 byte, so just storing 2 billion variables will take at least 240 GB.
+// Considering additional overhead and that the average variable will be in at least two clauses, this should be fine
+// for the foreseeable future.
+// Too bad, I am not really convinced by my own argument.
 #[cfg(feature = "small_variable_ids")]
 mod variable_id_impl {
 	pub type VariableId = u32;
@@ -21,6 +24,7 @@ pub use self::variable_id_impl::{VariableId, VARIABLE_ID_MAX};
 pub struct Variable {
 	q: f64,
 	watchlists: [Vec<usize>; 2],
+	implications: [Vec<Literal>; 2],
 	ante: usize,
 	depth: VariableId,
 	value: bool,
@@ -30,6 +34,7 @@ impl Variable {
 	pub fn new() -> Variable {
 		Variable {
 			watchlists: [Vec::new(), Vec::new()],
+			implications: [Vec::new(), Vec::new()],
 			ante: ::std::usize::MAX,
 			depth: VARIABLE_ID_MAX,
 			value: false,
@@ -84,6 +89,10 @@ impl Variable {
 
 	pub fn get_clauses(&mut self, negative: bool) -> &mut Vec<usize> {
 		&mut self.watchlists[negative as usize]
+	}
+
+	pub fn get_implications(&self, negative: bool) -> &Vec<Literal> {
+		&self.implications[negative as usize]
 	}
 
 	pub fn watch(&mut self, cid: usize, negated: bool) {
