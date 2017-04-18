@@ -91,8 +91,8 @@ impl Variable {
 		&mut self.watchlists[negative as usize]
 	}
 
-	pub fn get_implications(&self, negative: bool) -> &Vec<Literal> {
-		&self.implications[negative as usize]
+	pub fn get_implications(&mut self, negative: bool) -> &mut Vec<Literal> {
+		&mut self.implications[negative as usize]
 	}
 
 	pub fn watch(&mut self, cid: usize, negated: bool) {

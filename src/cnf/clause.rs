@@ -65,6 +65,10 @@ impl Clause {
 		 })
 	}
 
+	pub fn to_literals(self) -> IndexedVec<VariableId, Literal> {
+		self.literals
+	}
+
 	pub fn iter(&self) -> ::std::slice::Iter<Literal> {
 		self.literals.iter()
 	}
