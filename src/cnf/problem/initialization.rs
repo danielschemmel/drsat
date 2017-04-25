@@ -60,12 +60,11 @@ impl<T: fmt::Display> Problem<T> {
 		}
 		for i in 0..self.clauses.len() {
 			let len = self.clauses[i].len();
-			if len < 1073741824 { // safe as 2**(-2**30) is not representable as a f64
+			if len < 1073741824 {
+				// safe as 2**(-2**30) is not representable as a f64
 				let len = len as i32;
 				for (id, negated) in self.clauses[i].iter().map(|lit| lit.disassemble()) {
-					*counters[id][negated as usize]
-						.entry(len)
-						.or_insert(0) += 1;
+					*counters[id][negated as usize].entry(len).or_insert(0) += 1;
 				}
 			}
 			self.clauses[i].initialize_watched(i, &mut self.variables);
