@@ -12,6 +12,10 @@ name = "libdrsat"
 opt-level = 3
 lto = true # enabling this significantly increases compile time, but also seems to yield a > 10% speedup
 
+# check .cargo/config, which also contains the following:
+# [build]
+# rustflags = ["-C", "target-cpu=native"]
+
 [features]
 default = []
 small_variable_ids = []
