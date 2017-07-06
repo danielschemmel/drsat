@@ -3,6 +3,7 @@
 drsat consists of multiple frontends and a library component that actually implements most of the core features.
 
 The following frontends are provided as part of drsat:
+
 - `comp`: A barebones implementation of the SATCOMP interface.
 - `dimacs`: Another implementation of a SAT solver for dimacs files, which is more user friendly than `comp`.
 - `drsat`: A meta-frontend that provides the features of dimacs, npn and sudoku, as well as some more candy, as subcommands.
@@ -10,6 +11,7 @@ The following frontends are provided as part of drsat:
 - `sudoku`: Solves sudoku puzzles by way of generating and solving an equivalent SAT query. Optionally does simple additional simplifications based on sudoku rules. It can provide the generated query.
 
 Features of the core SAT solver:
+
 - Context Driven Clause Learning (CDCL) solver for Conjunctive Normal Form (CNF) SAT queries
 - Two watched literals clause watchlists
 - Geometric learnt clause deletion based on clause glues
