@@ -28,7 +28,8 @@ impl Error {
 			&ErrorKind::ParseInt(_) => 2,
 			&ErrorKind::Io(_) => 100,
 			&ErrorKind::RawIo(_) => 100,
-			&ErrorKind::Msg(_) => 127,
+			&ErrorKind::Msg(_) => 126,
+			_ => 127,
 		}
 	}
 
