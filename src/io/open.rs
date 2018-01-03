@@ -12,7 +12,7 @@ pub fn open_file(path: &str) -> Result<Box<BufRead>> {
 	if path.ends_with(".bz2") {
 		Ok(Box::new(BufReader::new(BzDecoder::new(file))))
 	} else if path.ends_with(".gz") {
-		Ok(Box::new(BufReader::new(GzDecoder::new(file)?)))
+		Ok(Box::new(BufReader::new(GzDecoder::new(file))))
 	} else if path.ends_with(".xz") {
 		Ok(Box::new(BufReader::new(XzDecoder::new(file))))
 	} else {
