@@ -1,9 +1,9 @@
 use std::fs::File;
 
 use clap::{App, AppSettings, Arg, ArgMatches};
-use io::open_file;
 
 use super::errors::*;
+use crate::io::open_file;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app
@@ -66,7 +66,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 
 	let path = matches.value_of("path").unwrap();
 	let time = matches.is_present("time");
-	let mut sw = ::util::Stopwatch::new();
+	let mut sw = crate::util::Stopwatch::new();
 
 	sw.start();
 	let mut reader = open_file(path).chain_err(|| ErrorKind::Parse(path.into()))?;
@@ -76,7 +76,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	}
 
 	sw.start();
-	let mut board = ::parser::sudoku::parse(&mut reader, rows, cols).chain_err(|| ErrorKind::Parse(path.into()))?;
+	let mut board = crate::parser::sudoku::parse(&mut reader, rows, cols).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Parsing board: {}", sw);

@@ -1,6 +1,5 @@
-use SolverResult;
-
 use super::*;
+use crate::SolverResult;
 
 #[test]
 fn sat1() {

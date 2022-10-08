@@ -1,8 +1,7 @@
 use std::io;
 
-use util::IndexedVec;
-
 use super::{Literal, Variable, VariableId};
+use crate::util::IndexedVec;
 
 #[derive(Debug)]
 pub struct Clause {

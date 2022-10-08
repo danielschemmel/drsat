@@ -1,8 +1,8 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
-use io::open_file;
-use SolverResult;
 
 use super::errors::*;
+use crate::io::open_file;
+use crate::SolverResult;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app
@@ -39,7 +39,7 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 pub fn main(matches: &ArgMatches) -> Result<()> {
 	let path = matches.value_of("path").unwrap();
 	let time = matches.is_present("time");
-	let mut sw = ::util::Stopwatch::new();
+	let mut sw = crate::util::Stopwatch::new();
 
 	sw.start();
 	let mut reader = open_file(path).chain_err(|| ErrorKind::Parse(path.into()))?;
@@ -49,7 +49,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	}
 
 	sw.start();
-	let mut problem = ::parser::dimacs::parse(&mut reader).chain_err(|| ErrorKind::Parse(path.into()))?;
+	let mut problem = crate::parser::dimacs::parse(&mut reader).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Parsing and preprocessing file: {}", sw);

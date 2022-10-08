@@ -1,8 +1,7 @@
 use std::io::BufRead;
 
-use cnf::{Problem, ProblemBuilder};
-
 use super::errors::*;
+use crate::cnf::{Problem, ProblemBuilder};
 
 fn is_ws(byte: u8) -> bool {
 	let x = byte.wrapping_sub(9);

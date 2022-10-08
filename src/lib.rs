@@ -1,10 +1,5 @@
-extern crate bzip2;
-extern crate clap;
 #[macro_use]
 extern crate error_chain;
-extern crate flate2;
-extern crate time;
-extern crate xz2;
 
 pub mod cnf;
 pub mod driver;
@@ -14,7 +9,7 @@ pub mod parser;
 pub mod sudoku;
 pub mod util;
 
-include!(concat!(env!("OUT_DIR"), "/version.rs"));
+pub const VERSION: &str = build_info::format!("{} {}", $.crate_info.version, $.version_control?.git()?);
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SolverResult {

@@ -1,8 +1,7 @@
 use std::io::Read;
 
-use sudoku::Board;
-
 use super::errors::*;
+use crate::sudoku::Board;
 
 pub fn parse(reader: &mut impl Read, rows: usize, cols: usize) -> Result<Board> {
 	let mut board = Board::new(rows, cols);

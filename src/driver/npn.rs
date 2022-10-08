@@ -1,8 +1,8 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
-use io::open_string;
-use SolverResult;
 
 use super::errors::*;
+use crate::io::open_string;
+use crate::SolverResult;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app
@@ -32,10 +32,10 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 pub fn main(matches: &ArgMatches) -> Result<()> {
 	let mut reader = open_string(matches.value_of("query").unwrap())?;
 	let time = matches.is_present("time");
-	let mut sw = ::util::Stopwatch::new();
+	let mut sw = crate::util::Stopwatch::new();
 
 	sw.start();
-	let mut problem = ::parser::npn::parse(&mut reader).chain_err(|| ErrorKind::Parse("-".into()))?;
+	let mut problem = crate::parser::npn::parse(&mut reader).chain_err(|| ErrorKind::Parse("-".into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Parsing query: {}", sw);

@@ -1,7 +1,7 @@
 use std::io;
 
-use cnf::{Problem, ProblemBuilder};
-use SolverResult;
+use crate::cnf::{Problem, ProblemBuilder};
+use crate::SolverResult;
 
 pub struct Board {
 	count: usize,

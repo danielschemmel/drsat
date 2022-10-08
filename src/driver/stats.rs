@@ -19,11 +19,11 @@ pub fn main(_: &ArgMatches) -> Result<()> {
 
 fn print(f: &mut impl Write) -> Result<()> {
 	writeln!(f, "General Purpose AST stats:")?;
-	::gp::ast::util::print_stats(f, "  ")?;
+	crate::gp::ast::util::print_stats(f, "  ")?;
 	writeln!(f)?;
 
 	writeln!(f, "CNF Problem stats:")?;
-	::cnf::util::print_stats(f, "  ")?;
+	crate::cnf::util::print_stats(f, "  ")?;
 
 	Ok(())
 }

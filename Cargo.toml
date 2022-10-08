@@ -4,6 +4,7 @@ description = "SAT solver"
 version = "0.1.0"
 authors = ["Daniel Schemmel <daniel.schemmel@comsys.rwth-aachen.de>"]
 build = "build.rs"
+edition = "2021"
 
 [lib]
 name = "libdrsat"
@@ -22,13 +23,12 @@ small_variable_ids = []
 aggressive = [ "small_variable_ids" ]
 
 [build-dependencies]
-error-chain = { version = "*" }
-git2 = { version = "*" }
+build-info-build = { version = "0.0.27"}
 
 [dependencies]
-bzip2 = { version = "*" }
-clap = { version = "*" }
-error-chain = { version = "*" }
-flate2 = { version = "*" }
-time = { version = "*" }
-xz2 = { version = "*" }
+build-info = { version = "0.0.27"}
+bzip2 = { version = "0.4.3" }
+clap = { version = "2" }
+error-chain = { version = "0.12.4" }
+flate2 = { version = "1.0.24" }
+xz2 = { version = "0.1.7" }

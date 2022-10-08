@@ -3,7 +3,7 @@ use std::io::Write;
 
 error_chain! {
 	links {
-		Io(::io::errors::Error, ::io::errors::ErrorKind);
+		Io(crate::io::errors::Error, crate::io::errors::ErrorKind);
 	}
 	foreign_links {
 		RawIo(io::Error); // FIXME

@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use util::{Histo, IndexedVec};
-use SolverResult;
-
 use super::{Clause, Literal, Problem, Variable, VariableId};
+use crate::util::{Histo, IndexedVec};
+use crate::SolverResult;
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn new(names: Vec<T>, mut clauses: Vec<Vec<Literal>>) -> Problem<T> {

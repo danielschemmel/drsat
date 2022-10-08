@@ -1,10 +1,9 @@
 use std::fmt;
 
-use cnf::clause::Apply;
-use util::IndexedVec;
-use SolverResult;
-
 use super::{Clause, Literal, Problem, VariableId, VARIABLE_ID_MAX};
+use crate::cnf::clause::Apply;
+use crate::util::IndexedVec;
+use crate::SolverResult;
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn solve(&mut self) -> SolverResult {

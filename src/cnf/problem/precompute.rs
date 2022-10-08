@@ -1,7 +1,6 @@
-use util::IndexedVec;
-use SolverResult;
-
 use super::{Literal, Variable, VariableId};
+use crate::util::IndexedVec;
+use crate::SolverResult;
 
 pub fn precompute(variables: &mut IndexedVec<VariableId, Variable>, clauses: &mut Vec<Vec<Literal>>) -> SolverResult {
 	// sorting
