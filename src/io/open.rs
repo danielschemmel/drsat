@@ -7,7 +7,7 @@ use xz2::read::XzDecoder;
 
 use super::errors::*;
 
-pub fn open_file(path: &str) -> Result<Box<dyn BufRead>> {
+pub fn open_file(path: &std::path::Path) -> Result<Box<dyn BufRead>> {
 	let file = File::open(path)?;
 	if path.ends_with(".bz2") {
 		Ok(Box::new(BufReader::new(BzDecoder::new(file))))

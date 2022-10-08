@@ -1,97 +1,69 @@
 use std::fs::File;
 
-use clap::{App, AppSettings, Arg, ArgMatches};
-
 use super::errors::*;
 use crate::io::open_file;
 
-pub fn setup_command(app: App<'_>) -> App<'_> {
-	app
-		.about("Parse and solve a sudoku puzzle")
-		.setting(AppSettings::ColoredHelp)
-		.arg(
-			Arg::with_name("path")
-				.required(true)
-				.index(1)
-				.takes_value(true)
-				.value_name("FILE")
-				.help("The path to the file containing the puzzle"),
-		)
-		.arg(
-			Arg::with_name("time")
-				.short('t')
-				.long("time")
-				.help("Time the solving process"),
-		)
-		.arg(Arg::with_name("all").short('a').long("all").help("Give all solutions"))
-		.arg(
-			Arg::with_name("deduce")
-				.short('d')
-				.long("deduce")
-				.help("Simplify problem by deducing implications via sudoku rules"),
-		)
-		.arg(
-			Arg::with_name("query")
-				.short('q')
-				.long("query")
-				.takes_value(true)
-				.value_name("FILE")
-				.help("Write SAT query in dimacs cnf format to FILE"),
-		)
-		.arg(
-			Arg::with_name("rows")
-				.short('r')
-				.long("rows")
-				.takes_value(true)
-				.default_value("3")
-				.value_name("FILE")
-				.help("Write SAT query in dimacs cnf format to FILE"),
-		)
-		.arg(
-			Arg::with_name("cols")
-				.short('c')
-				.long("cols")
-				.takes_value(true)
-				.default_value("3")
-				.value_name("FILE")
-				.help("Write SAT query in dimacs cnf format to FILE"),
-		)
+#[derive(clap::Parser, Debug)]
+#[clap(about = "Parse and solve a sudoku puzzle", long_about = None)]
+pub struct Cli {
+	/// The path to the file containing the puzzle
+	#[arg(value_name = "FILE")]
+	path: std::path::PathBuf,
+
+	/// Time the solving process
+	#[arg(short = 't', long = "time")]
+	time: bool,
+
+	/// Give all solutions
+	#[arg(short = 'a', long = "all")]
+	all: bool,
+
+	/// Simplify problem by deducing implications via sudoku rules
+	#[arg(short = 'd', long = "deduce")]
+	deduce: bool,
+
+	/// Write SAT query in dimacs cnf format to FILE
+	#[arg(short = 'q', long = "query", value_name = "FILE")]
+	query: Option<std::path::PathBuf>,
+
+	#[arg(short = 'r', long = "rows", default_value_t = 3)]
+	rows: usize,
+
+	#[arg(short = 'c', long = "cols", default_value_t = 3)]
+	cols: usize,
 }
 
-pub fn main(matches: &ArgMatches) -> Result<()> {
-	let rows = matches.value_of("rows").unwrap().parse()?; // FIXME: add better error handling
-	let cols = matches.value_of("cols").unwrap().parse()?;
-	ensure!(rows > 0 && rows < 36, "rows must be in [1; 35]");
-	ensure!(cols > 0 && cols < 36, "cols must be in [1; 35]");
+pub fn main(args: Cli) -> Result<()> {
+	ensure!(args.rows > 0 && args.rows < 36, "rows must be in [1; 35]");
+	ensure!(args.cols > 0 && args.cols < 36, "cols must be in [1; 35]");
 
-	let path = matches.value_of("path").unwrap();
-	let time = matches.is_present("time");
 	let mut sw = crate::util::Stopwatch::new();
 
 	sw.start();
-	let mut reader = open_file(path).chain_err(|| ErrorKind::Parse(path.into()))?;
+	let mut reader = open_file(&args.path).chain_err(|| ErrorKind::Parse(args.path.display().to_string()))?;
 	sw.stop();
-	if time {
+	if args.time {
 		println!("[T] Opening file: {}", sw);
 	}
 
 	sw.start();
-	let mut board = crate::parser::sudoku::parse(&mut reader, rows, cols).chain_err(|| ErrorKind::Parse(path.into()))?;
+	let mut board = crate::parser::sudoku::parse(&mut reader, args.rows, args.cols)
+		.chain_err(|| ErrorKind::Parse(args.path.display().to_string()))?;
 	sw.stop();
-	if time {
+	if args.time {
 		println!("[T] Parsing board: {}", sw);
 	}
 
-	if matches.is_present("deduce") {
+	if args.deduce {
 		sw.start();
 		board.deduce();
 		sw.stop();
-		if time {
+		if args.time {
 			println!("[T] Deducing: {}", sw);
 		}
 	}
 
-	if let Some(query_path) = matches.value_of("query") {
+	if let Some(query_path) = args.query {
 		let mut file = File::create(query_path)?;
 		board.print_dimacs(&mut file)?;
 	}
@@ -99,7 +71,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	sw.start();
 	let result = board.solve();
 	sw.stop();
-	if time {
+	if args.time {
 		println!("[T] Solving query: {}", sw);
 		// FIXME: decide what to do here // problem.print_conflict_histo();
 	}
@@ -110,7 +82,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 			println!("Puzzle is impossible");
 		}
 		Some(solution) => {
-			let count = rows * cols;
+			let count = args.rows * args.cols;
 			debug_assert!(count < 36);
 			for row in 0..count {
 				for col in 0..count {

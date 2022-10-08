@@ -1,46 +1,34 @@
-use clap::{App, AppSettings, Arg, ArgMatches};
-
 use super::errors::*;
 use crate::io::open_string;
 use crate::SolverResult;
 
-pub fn setup_command(app: App<'_>) -> App<'_> {
-	app
-		.about("Parse and solve a npn query")
-		.setting(AppSettings::ColoredHelp)
-		.arg(
-			Arg::with_name("query")
-				.required(true)
-				.index(1)
-				.takes_value(true)
-				.value_name("QUERY")
-				.help("A query in normal polish notation"),
-		)
-		.arg(
-			Arg::with_name("time")
-				.short('t')
-				.long("time")
-				.help("Time the solving process"),
-		)
-		.arg(
-			Arg::with_name("dump-ast")
-				.long("dump-ast")
-				.help("Dump the AST of the problem after parsing it"),
-		)
+#[derive(clap::Parser, Debug)]
+#[clap(about = "Parse and solve a npn query", long_about = None)]
+pub struct Cli {
+	/// A query in normal polish notation
+	#[arg(value_name = "QUERY")]
+	query: String,
+
+	/// Time the solving process
+	#[arg(short = 't', long = "time")]
+	time: bool,
+
+	/// Dump the AST of the problem after parsing it
+	#[arg(long = "dump-ast")]
+	dump_ast: bool,
 }
 
-pub fn main(matches: &ArgMatches) -> Result<()> {
-	let mut reader = open_string(matches.value_of("query").unwrap())?;
-	let time = matches.is_present("time");
+pub fn main(args: Cli) -> Result<()> {
+	let mut reader = open_string(&args.query)?;
 	let mut sw = crate::util::Stopwatch::new();
 
 	sw.start();
 	let mut problem = crate::parser::npn::parse(&mut reader).chain_err(|| ErrorKind::Parse("-".into()))?;
 	sw.stop();
-	if time {
+	if args.time {
 		println!("[T] Parsing query: {}", sw);
 	}
-	if matches.is_present("dump-ast") {
+	if args.dump_ast {
 		//println!("{:?}", problem);
 		problem.print_clauses(&mut ::std::io::stdout())?;
 	}
@@ -48,7 +36,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	sw.start();
 	let result = problem.solve();
 	sw.stop();
-	if time {
+	if args.time {
 		println!("[T] Solving query: {}", sw);
 		problem.print_conflict_histo(&mut ::std::io::stdout())?;
 	}

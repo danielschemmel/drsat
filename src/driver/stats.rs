@@ -1,16 +1,12 @@
 use std::io::Write;
 
-use clap::{App, AppSettings, ArgMatches};
-
 use super::errors::*;
 
-pub fn setup_command(app: App<'_>) -> App<'_> {
-	app
-		.about("Print some internal statistics")
-		.setting(AppSettings::ColoredHelp)
-}
+#[derive(clap::Parser, Debug)]
+#[clap(about = "Print some internal statistics", long_about = None)]
+pub struct Cli {}
 
-pub fn main(_: &ArgMatches) -> Result<()> {
+pub fn main(_: Cli) -> Result<()> {
 	let stdout = ::std::io::stdout();
 	let mut handle = stdout.lock();
 	print(&mut handle)?;

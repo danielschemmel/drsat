@@ -6,6 +6,8 @@ authors = ["Daniel Schemmel <daniel.schemmel@comsys.rwth-aachen.de>"]
 build = "build.rs"
 edition = "2021"
 
+default-run = "drsat"
+
 [lib]
 name = "libdrsat"
 
@@ -28,8 +30,8 @@ build-info-build = { version = "0.0.27"}
 [dependencies]
 build-info = { version = "0.0.27"}
 bzip2 = { version = "0.4.3" }
-clap = { version = "3", features = ["cargo"] }
-clap_complete = { version = "3" }
+clap = { version = "4.0.10", features = ["derive"] }
+clap_complete = { version = "4.0.2" }
 error-chain = { version = "0.12.4" }
 flate2 = { version = "1.0.24" }
 xz2 = { version = "0.1.7" }

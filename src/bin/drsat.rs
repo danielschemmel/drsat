@@ -1,40 +1,32 @@
-use clap::{App, AppSettings, SubCommand};
-
-extern crate libdrsat;
 use libdrsat::driver::errors::*;
 use libdrsat::{driver, VERSION};
 
-const NAME: &str = "drsat";
-
-fn gen_cli() -> App<'static> {
-	App::new(NAME)
-		.version(VERSION)
-		.about(clap::crate_description!())
-		.setting(AppSettings::ColoredHelp)
-		.setting(AppSettings::GlobalVersion)
-		.setting(AppSettings::SubcommandRequiredElseHelp)
-		.subcommand(driver::completion::setup_command(SubCommand::with_name("completion")))
-		.subcommand(driver::dimacs::setup_command(SubCommand::with_name("dimacs")))
-		.subcommand(driver::npn::setup_command(SubCommand::with_name("npn")))
-		.subcommand(driver::stats::setup_command(SubCommand::with_name("stats")))
-		.subcommand(driver::sudoku::setup_command(SubCommand::with_name("sudoku")))
-		.subcommand(SubCommand::with_name("version").about("Prints version information"))
+#[derive(clap::Parser, Debug)]
+#[clap(name = "drsat", about, long_about = None, version = VERSION)]
+struct Cli {
+	#[command(subcommand)]
+	command: Commands,
 }
 
-fn print_version() -> Result<()> {
-	println!("{} {}", NAME, VERSION);
-	Ok(())
+#[derive(Debug, clap::Subcommand)]
+enum Commands {
+	Completion(driver::completion::Cli),
+	Dimacs(driver::dimacs::Cli),
+	Npn(driver::npn::Cli),
+	Stats(driver::stats::Cli),
+	Sudoku(driver::sudoku::Cli),
 }
 
 fn run() -> Result<()> {
-	match gen_cli().get_matches().subcommand() {
-		Some(("completion", matches)) => libdrsat::driver::completion::run_command(gen_cli(), matches, NAME),
-		Some(("dimacs", matches)) => libdrsat::driver::dimacs::main(matches),
-		Some(("npn", matches)) => libdrsat::driver::npn::main(matches),
-		Some(("stats", matches)) => libdrsat::driver::stats::main(matches),
-		Some(("sudoku", matches)) => libdrsat::driver::sudoku::main(matches),
-		Some(("version", _)) => print_version(),
-		_ => unreachable!(),
+	let args = <Cli as clap::Parser>::parse();
+	match args.command {
+		Commands::Completion(args) => {
+			libdrsat::driver::completion::run_command(args, <Cli as clap::CommandFactory>::command())
+		}
+		Commands::Dimacs(args) => libdrsat::driver::dimacs::main(args),
+		Commands::Npn(args) => libdrsat::driver::npn::main(args),
+		Commands::Stats(args) => libdrsat::driver::stats::main(args),
+		Commands::Sudoku(args) => libdrsat::driver::sudoku::main(args),
 	}
 }
 

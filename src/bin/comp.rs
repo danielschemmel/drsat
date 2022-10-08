@@ -1,4 +1,3 @@
-extern crate libdrsat;
 use std::env;
 use std::process::exit;
 
