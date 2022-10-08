@@ -4,7 +4,7 @@ use sudoku::Board;
 
 use super::errors::*;
 
-pub fn parse(reader: &mut Read, rows: usize, cols: usize) -> Result<Board> {
+pub fn parse(reader: &mut impl Read, rows: usize, cols: usize) -> Result<Board> {
 	let mut board = Board::new(rows, cols);
 	let count = rows * cols;
 	let mut line = Vec::new();
@@ -14,11 +14,11 @@ pub fn parse(reader: &mut Read, rows: usize, cols: usize) -> Result<Board> {
 		for (col, &c) in line.iter().enumerate() {
 			if c == b' ' || c == b'0' || c == b'.' {
 				// ok, nothing to do
-			} else if c >= b'0' && c <= b'9' {
+			} else if (b'0'..=b'9').contains(&c) {
 				board.set(row, col, (c - b'0') as usize);
-			} else if c >= b'a' && c <= b'z' {
+			} else if (b'a'..=b'z').contains(&c) {
 				board.set(row, col, (c - b'a') as usize + 10);
-			} else if c >= b'A' && c <= b'Z' {
+			} else if (b'A'..=b'Z').contains(&c) {
 				board.set(row, col, (c - b'A') as usize + 10);
 			} else {
 				bail!("Unexpected character"); // FIXME: use some proper error thingy

@@ -1,5 +1,6 @@
-use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+
 use super::{Literal, Problem, VariableId};
 
 #[derive(Debug)]
@@ -10,7 +11,8 @@ pub struct ProblemBuilder<T: ::std::hash::Hash + ::std::cmp::Eq> {
 }
 
 impl<T> ProblemBuilder<T>
-  where T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone
+where
+	T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone,
 {
 	pub fn new() -> ProblemBuilder<T> {
 		ProblemBuilder {
@@ -59,15 +61,26 @@ impl<T> ProblemBuilder<T>
 	}
 }
 
+impl<T> Default for ProblemBuilder<T>
+where
+	T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone,
+{
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
 pub struct ClauseBuilder<'a, T: 'a>
-	where T: ::std::hash::Hash + ::std::cmp::Eq
+where
+	T: ::std::hash::Hash + ::std::cmp::Eq,
 {
 	problembuilder: &'a mut ProblemBuilder<T>,
 	index: usize,
 }
 
 impl<'a, T> ClauseBuilder<'a, T>
-  where T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone
+where
+	T: ::std::hash::Hash + ::std::cmp::Eq + ::std::fmt::Display + ::std::clone::Clone,
 {
 	pub fn add_literal(&mut self, name: T, negated: bool) -> &mut Self {
 		let id = self.problembuilder.variable_id(name);
@@ -76,6 +89,6 @@ impl<'a, T> ClauseBuilder<'a, T>
 	}
 
 	pub fn len(&self) -> usize {
-		return self.problembuilder.clauses[self.index].len();
+		self.problembuilder.clauses[self.index].len()
 	}
 }

@@ -1,5 +1,4 @@
-use super::Node;
-use super::Variable;
+use super::{Node, Variable};
 
 #[derive(Debug)]
 pub struct Or {
@@ -13,5 +12,11 @@ impl Or {
 			nodes: Vec::new(),
 			variables: Vec::new(),
 		}
+	}
+}
+
+impl Default for Or {
+	fn default() -> Self {
+		Self::new()
 	}
 }

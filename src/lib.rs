@@ -16,7 +16,7 @@ pub mod util;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
-#[derive(Debug,PartialEq,Eq,Copy,Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SolverResult {
 	Sat,
 	Unsat,

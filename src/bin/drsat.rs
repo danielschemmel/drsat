@@ -3,10 +3,10 @@ extern crate clap;
 use clap::{App, AppSettings, SubCommand};
 
 extern crate libdrsat;
-use libdrsat::{driver, VERSION};
 use libdrsat::driver::errors::*;
+use libdrsat::{driver, VERSION};
 
-const NAME: &'static str = "drsat";
+const NAME: &str = "drsat";
 
 fn gen_cli() -> App<'static, 'static> {
 	App::new(NAME)

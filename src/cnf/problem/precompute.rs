@@ -1,9 +1,9 @@
 use util::IndexedVec;
-
-use super::{Literal, Variable, VariableId};
 use SolverResult;
 
-pub fn precompute(mut variables: &mut IndexedVec<VariableId, Variable>, mut clauses: &mut Vec<Vec<Literal>>) -> SolverResult {
+use super::{Literal, Variable, VariableId};
+
+pub fn precompute(variables: &mut IndexedVec<VariableId, Variable>, clauses: &mut Vec<Vec<Literal>>) -> SolverResult {
 	// sorting
 	for clause in clauses.iter_mut() {
 		clause.sort();
@@ -22,9 +22,9 @@ pub fn precompute(mut variables: &mut IndexedVec<VariableId, Variable>, mut clau
 				let mut k = 0;
 				let mut sat = false;
 				{
-					let ref mut clause = clauses[ci];
+					let clause = &mut clauses[ci];
 					let mut j = 0;
-					debug_assert!(clause.len() > 0);
+					debug_assert!(!clause.is_empty());
 					while i < clause.len() && j < v.len() {
 						if clause[i].id() < v[j] {
 							if i != k {
@@ -35,7 +35,7 @@ pub fn precompute(mut variables: &mut IndexedVec<VariableId, Variable>, mut clau
 						} else if clause[i].id() > v[j] {
 							j += 1;
 						} else {
-							let ref var = variables[v[j]];
+							let var = &variables[v[j]];
 							debug_assert!(var.has_value());
 							if clause[i].negated() != var.get_value() {
 								sat = true;
@@ -63,7 +63,7 @@ pub fn precompute(mut variables: &mut IndexedVec<VariableId, Variable>, mut clau
 					return SolverResult::Unsat;
 				} else if k == 1 {
 					let lit = clauses[ci][0];
-					let ref mut var = variables[lit.id()];
+					let var = &mut variables[lit.id()];
 					if var.has_value() {
 						if lit.negated() == var.get_value() {
 							return SolverResult::Unsat;

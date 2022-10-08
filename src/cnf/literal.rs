@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
-use std::fmt;
-use std::io;
+use std::{fmt, io};
+
 use super::VariableId;
 
 #[derive(Debug, Copy, Clone, Eq)]
@@ -12,7 +12,9 @@ impl Literal {
 	#[inline]
 	pub fn new(id: VariableId, negated: bool) -> Literal {
 		debug_assert!(id.wrapping_shl(1) >> 1 == id);
-		Literal { data: (id << 1) | (negated as VariableId) }
+		Literal {
+			data: (id << 1) | (negated as VariableId),
+		}
 	}
 
 	#[inline]
@@ -30,7 +32,7 @@ impl Literal {
 		(self.data >> 1, (self.data & 1) != 0)
 	}
 
-	pub fn print<T: ::std::fmt::Display>(&self, f: &mut io::Write, name: &T) -> io::Result<()> {
+	pub fn print<T: ::std::fmt::Display>(&self, f: &mut impl io::Write, name: &T) -> io::Result<()> {
 		if self.negated() {
 			write!(f, "¬{}", name)
 		} else {

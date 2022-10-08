@@ -28,10 +28,10 @@ impl Board {
 		let mut data = Vec::new();
 		data.resize(count * count * count, true);
 		Board {
-			count: count,
-			cols: cols,
-			rows: rows,
-			data: data,
+			count,
+			cols,
+			rows,
+			data,
 		}
 	}
 
@@ -47,7 +47,7 @@ impl Board {
 					}
 				}
 			}
-			println!("");
+			println!();
 		}
 	}
 
@@ -57,7 +57,7 @@ impl Board {
 		debug_assert!(val > 0 && val <= self.count);
 		let offset = row * self.count * self.count + col * self.count;
 		for i in 0..self.count {
-			self.data[offset + i] = if i == val - 1 { true } else { false };
+			self.data[offset + i] = i == val - 1;
 		}
 		self
 	}
@@ -67,9 +67,7 @@ impl Board {
 		debug_assert!(col < self.count);
 		let offset = row * self.count * self.count + col * self.count;
 		let mut found = false;
-		for _ in self.data[offset..(offset + self.count)]
-		      .iter()
-		      .filter(|&x| *x) {
+		for _ in self.data[offset..(offset + self.count)].iter().filter(|&x| *x) {
 			if found {
 				return false;
 			} else {
@@ -137,7 +135,7 @@ impl Board {
 				}
 				print!("|");
 			}
-			println!("");
+			println!();
 		}
 	}
 
@@ -233,15 +231,14 @@ impl Board {
 			match problem.solve() {
 				SolverResult::Unsat => None,
 				SolverResult::Unknown => {
-					assert!(false);
-					None
+					panic!("solver returned an unknown result");
 				}
 				SolverResult::Sat => {
 					let model = problem.model();
 					let mut solution = Vec::new();
 					solution.resize(self.count * self.count, 0);
-					for t in model.iter().filter(|t| t.1 == true) {
-						debug_assert_eq!(t.1, true);
+					for t in model.iter().filter(|t| t.1) {
+						debug_assert!(t.1);
 						debug_assert_eq!(solution[*t.0 / self.count], 0);
 						solution[*t.0 / self.count] = *t.0 % self.count + 1;
 					}
@@ -253,7 +250,7 @@ impl Board {
 		}
 	}
 
-	pub fn print_dimacs(&self, writer: &mut io::Write) -> io::Result<()> {
+	pub fn print_dimacs(&self, writer: &mut impl io::Write) -> io::Result<()> {
 		let problem = self.create_problem(); // FIXME: the model is generated twice...
 		if let Some(problem) = problem {
 			problem.print_dimacs(writer)

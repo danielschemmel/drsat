@@ -1,9 +1,8 @@
 extern crate libdrsat;
-use libdrsat::driver;
-use libdrsat::SolverResult;
-
 use std::env;
 use std::process::exit;
+
+use libdrsat::{driver, SolverResult};
 
 fn usage(name: &str) {
 	println!("usage: {} <PATH>", name);
@@ -12,7 +11,7 @@ fn usage(name: &str) {
 fn main() {
 	let args: Vec<_> = env::args().collect();
 	if args.len() != 2 {
-		usage(if args.len() > 0 { &args[0] } else { "comp" });
+		usage(if !args.is_empty() { &args[0] } else { "comp" });
 		exit(1);
 	}
 

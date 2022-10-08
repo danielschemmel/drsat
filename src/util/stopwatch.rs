@@ -1,4 +1,5 @@
 use std::fmt;
+
 use time::{Duration, SteadyTime};
 
 #[derive(Debug)]
@@ -22,6 +23,12 @@ impl Stopwatch {
 
 	pub fn stop(&mut self) {
 		self.stop = SteadyTime::now();
+	}
+}
+
+impl Default for Stopwatch {
+	fn default() -> Self {
+		Self::new()
 	}
 }
 
@@ -55,22 +62,13 @@ fn format_duration(f: &mut fmt::Formatter, duration: &Duration) -> fmt::Result {
 			format_long_seconds(f, ns / 1_000_000_000)
 		} else if ns >= 99_995_000_000 {
 			let ns = ns + ns % 100_000_000;
-			write!(f,
-			       "{}.{:01} s",
-			       ns / 1_000_000_000,
-			       ns % 1_000_000_000 / 100_000_000)
+			write!(f, "{}.{:01} s", ns / 1_000_000_000, ns % 1_000_000_000 / 100_000_000)
 		} else if ns >= 9_999_500_000 {
 			let ns = ns + ns % 10_000_000;
-			write!(f,
-			       "{}.{:02} s",
-			       ns / 1_000_000_000,
-			       ns % 1_000_000_000 / 10_000_000)
+			write!(f, "{}.{:02} s", ns / 1_000_000_000, ns % 1_000_000_000 / 10_000_000)
 		} else if ns >= 999_950_000 {
 			let ns = ns + ns % 1_000_000;
-			write!(f,
-			       "{}.{:03} s",
-			       ns / 1_000_000_000,
-			       ns % 1_000_000_000 / 1_000_000)
+			write!(f, "{}.{:03} s", ns / 1_000_000_000, ns % 1_000_000_000 / 1_000_000)
 		} else if ns >= 99_995_000 {
 			let ns = ns + ns % 100_000;
 			write!(f, "{}.{:01} ms", ns / 1_000_000, ns % 1_000_000 / 100_000)
@@ -120,7 +118,7 @@ mod tests {
 	use super::*;
 
 	fn duration_str(duration: &Duration) -> String {
-		format!("{}", DurationWrapper { duration: duration })
+		format!("{}", DurationWrapper { duration })
 	}
 
 	#[test]
@@ -187,166 +185,193 @@ mod tests {
 	#[test]
 	fn test_format_duration_9() {
 		assert_eq!(duration_str(&Duration::nanoseconds(99_995_000)), "100.0 ms");
-		assert_eq!(duration_str(&Duration::nanoseconds(123_449_999)),
-		           "123.4 ms");
-		assert_eq!(duration_str(&Duration::nanoseconds(123_450_000)),
-		           "123.5 ms");
-		assert_eq!(duration_str(&Duration::nanoseconds(999_949_999)),
-		           "999.9 ms");
+		assert_eq!(duration_str(&Duration::nanoseconds(123_449_999)), "123.4 ms");
+		assert_eq!(duration_str(&Duration::nanoseconds(123_450_000)), "123.5 ms");
+		assert_eq!(duration_str(&Duration::nanoseconds(999_949_999)), "999.9 ms");
 	}
 
 	#[test]
 	fn test_format_duration_10() {
 		assert_eq!(duration_str(&Duration::nanoseconds(999_950_000)), "1.000 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(1_234_499_999)),
-		           "1.234 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(1_234_500_000)),
-		           "1.235 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(9_999_499_999)),
-		           "9.999 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(1_234_499_999)), "1.234 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(1_234_500_000)), "1.235 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(9_999_499_999)), "9.999 s");
 	}
 
 	#[test]
 	fn test_format_duration_11() {
-		assert_eq!(duration_str(&Duration::nanoseconds(9_999_500_000)),
-		           "10.00 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(12_344_999_999)),
-		           "12.34 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(12_345_000_000)),
-		           "12.35 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(99_994_999_999)),
-		           "99.99 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(9_999_500_000)), "10.00 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(12_344_999_999)), "12.34 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(12_345_000_000)), "12.35 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(99_994_999_999)), "99.99 s");
 	}
 
 	#[test]
 	fn test_format_duration_12() {
-		assert_eq!(duration_str(&Duration::nanoseconds(99_995_000_000)),
-		           "100.0 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(123_449_999_999)),
-		           "123.4 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(123_450_000_000)),
-		           "123.5 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(999_949_999_999)),
-		           "999.9 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(99_995_000_000)), "100.0 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(123_449_999_999)), "123.4 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(123_450_000_000)), "123.5 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(999_949_999_999)), "999.9 s");
 	}
 
 	#[test]
 	fn test_format_duration_13() {
-		assert_eq!(duration_str(&Duration::nanoseconds(999_950_000_000)),
-		           "1 000 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(1_234_499_999_999)),
-		           "1 234 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(1_234_500_000_000)),
-		           "1 235 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(9_999_499_999_999)),
-		           "9 999 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(999_950_000_000)), "1 000 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(1_234_499_999_999)), "1 234 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(1_234_500_000_000)), "1 235 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(9_999_499_999_999)), "9 999 s");
 	}
 
 	#[test]
 	fn test_format_duration_14() {
-		assert_eq!(duration_str(&Duration::nanoseconds(9_999_500_000_000)),
-		           "10 000 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(12_344_499_999_999)),
-		           "12 344 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(12_344_500_000_000)),
-		           "12 345 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(99_999_499_999_999)),
-		           "99 999 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(9_999_500_000_000)), "10 000 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(12_344_499_999_999)), "12 344 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(12_344_500_000_000)), "12 345 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(99_999_499_999_999)), "99 999 s");
 	}
 
 	#[test]
 	fn test_format_duration_15() {
-		assert_eq!(duration_str(&Duration::nanoseconds(99_999_500_000_000)),
-		           "100 000 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(123_444_499_999_999)),
-		           "123 444 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(123_444_500_000_000)),
-		           "123 445 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(999_999_499_999_999)),
-		           "999 999 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(99_999_500_000_000)), "100 000 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(123_444_499_999_999)), "123 444 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(123_444_500_000_000)), "123 445 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(999_999_499_999_999)), "999 999 s");
 	}
 
 	#[test]
 	fn test_format_duration_16() {
-		assert_eq!(duration_str(&Duration::nanoseconds(999_999_500_000_000)),
-		           "1 000 000 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(1_234_444_499_999_999)),
-		           "1 234 444 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(1_234_444_500_000_000)),
-		           "1 234 445 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(9_999_999_499_999_999)),
-		           "9 999 999 s");
+		assert_eq!(duration_str(&Duration::nanoseconds(999_999_500_000_000)), "1 000 000 s");
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(1_234_444_499_999_999)),
+			"1 234 444 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(1_234_444_500_000_000)),
+			"1 234 445 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(9_999_999_499_999_999)),
+			"9 999 999 s"
+		);
 	}
 
 	#[test]
 	fn test_format_duration_17() {
-		assert_eq!(duration_str(&Duration::nanoseconds(9_999_999_500_000_000)),
-		           "10 000 000 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(12_344_444_499_999_999)),
-		           "12 344 444 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(12_344_444_500_000_000)),
-		           "12 344 445 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(99_999_999_499_999_999)),
-		           "99 999 999 s");
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(9_999_999_500_000_000)),
+			"10 000 000 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(12_344_444_499_999_999)),
+			"12 344 444 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(12_344_444_500_000_000)),
+			"12 344 445 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(99_999_999_499_999_999)),
+			"99 999 999 s"
+		);
 	}
 
 	#[test]
 	fn test_format_duration_18() {
-		assert_eq!(duration_str(&Duration::nanoseconds(99_999_999_500_000_000)),
-		           "100 000 000 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(123_444_444_499_999_999)),
-		           "123 444 444 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(123_444_444_500_000_000)),
-		           "123 444 445 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(999_999_999_499_999_999)),
-		           "999 999 999 s");
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(99_999_999_500_000_000)),
+			"100 000 000 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(123_444_444_499_999_999)),
+			"123 444 444 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(123_444_444_500_000_000)),
+			"123 444 445 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(999_999_999_499_999_999)),
+			"999 999 999 s"
+		);
 	}
 
 	#[test]
 	fn test_format_duration_19() {
-		assert_eq!(duration_str(&Duration::nanoseconds(999_999_999_500_000_000)),
-		           "1 000 000 000 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(1_234_444_444_499_999_999)),
-		           "1 234 444 444 s");
-		assert_eq!(duration_str(&Duration::nanoseconds(1_234_444_444_500_000_000)),
-		           "1 234 444 445 s");
-		assert_eq!(duration_str(&Duration::microseconds(9_999_999_999_499_999)),
-		           "9 999 999 999 s");
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(999_999_999_500_000_000)),
+			"1 000 000 000 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(1_234_444_444_499_999_999)),
+			"1 234 444 444 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::nanoseconds(1_234_444_444_500_000_000)),
+			"1 234 444 445 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::microseconds(9_999_999_999_499_999)),
+			"9 999 999 999 s"
+		);
 	}
 
 	#[test]
 	fn test_format_duration_20() {
-		assert_eq!(duration_str(&Duration::microseconds(9_999_999_999_500_000)),
-		           "10 000 000 000 s");
-		assert_eq!(duration_str(&Duration::microseconds(12_344_444_444_499_999)),
-		           "12 344 444 444 s");
-		assert_eq!(duration_str(&Duration::microseconds(12_344_444_444_500_000)),
-		           "12 344 444 445 s");
-		assert_eq!(duration_str(&Duration::microseconds(99_999_999_999_499_999)),
-		           "99 999 999 999 s");
+		assert_eq!(
+			duration_str(&Duration::microseconds(9_999_999_999_500_000)),
+			"10 000 000 000 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::microseconds(12_344_444_444_499_999)),
+			"12 344 444 444 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::microseconds(12_344_444_444_500_000)),
+			"12 344 444 445 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::microseconds(99_999_999_999_499_999)),
+			"99 999 999 999 s"
+		);
 	}
 
 	#[test]
 	fn test_format_duration_21() {
-		assert_eq!(duration_str(&Duration::microseconds(99_999_999_999_500_000)),
-		           "100 000 000 000 s");
-		assert_eq!(duration_str(&Duration::microseconds(123_444_444_444_499_999)),
-		           "123 444 444 444 s");
-		assert_eq!(duration_str(&Duration::microseconds(123_444_444_444_500_000)),
-		           "123 444 444 445 s");
-		assert_eq!(duration_str(&Duration::microseconds(999_999_999_999_499_999)),
-		           "999 999 999 999 s");
+		assert_eq!(
+			duration_str(&Duration::microseconds(99_999_999_999_500_000)),
+			"100 000 000 000 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::microseconds(123_444_444_444_499_999)),
+			"123 444 444 444 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::microseconds(123_444_444_444_500_000)),
+			"123 444 444 445 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::microseconds(999_999_999_999_499_999)),
+			"999 999 999 999 s"
+		);
 	}
 
 	#[test]
 	fn test_format_duration_22() {
-		assert_eq!(duration_str(&Duration::microseconds(999_999_999_999_500_000)),
-		           "1 000 000 000 000 s");
-		assert_eq!(duration_str(&Duration::microseconds(1_234_444_444_444_499_999)),
-		           "1 234 444 444 444 s");
-		assert_eq!(duration_str(&Duration::microseconds(1_234_444_444_444_500_000)),
-		           "1 234 444 444 445 s");
-		assert_eq!(duration_str(&Duration::milliseconds(9_999_999_999_999_499)),
-		           "9 999 999 999 999 s");
+		assert_eq!(
+			duration_str(&Duration::microseconds(999_999_999_999_500_000)),
+			"1 000 000 000 000 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::microseconds(1_234_444_444_444_499_999)),
+			"1 234 444 444 444 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::microseconds(1_234_444_444_444_500_000)),
+			"1 234 444 444 445 s"
+		);
+		assert_eq!(
+			duration_str(&Duration::milliseconds(9_999_999_999_999_499)),
+			"9 999 999 999 999 s"
+		);
 	}
 }

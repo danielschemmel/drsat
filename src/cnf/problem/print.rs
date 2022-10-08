@@ -1,20 +1,18 @@
-use std::fmt;
-use std::io;
-use std::str;
+use std::{fmt, io, str};
 
 use super::Problem;
 
 impl<T: fmt::Display> Problem<T> {
-	pub fn print(&self, writer: &mut io::Write) -> io::Result<()> {
+	pub fn print(&self, writer: &mut impl io::Write) -> io::Result<()> {
 		writeln!(writer, "Problem of {} clauses:", self.clauses.len())?;
 		for clause in &self.clauses {
 			clause.print(writer, &self.variable_names)?;
-			writeln!(writer, "")?;
+			writeln!(writer)?;
 		}
 		Ok(())
 	}
 
-	pub fn print_model(&self, writer: &mut io::Write, indent: &str) -> io::Result<()> {
+	pub fn print_model(&self, writer: &mut impl io::Write, indent: &str) -> io::Result<()> {
 		for (var, name) in self.variables.iter().zip(self.variable_names.iter()) {
 			// FIXME: allow using &self.variables here
 			debug_assert!(var.has_value());
@@ -23,24 +21,23 @@ impl<T: fmt::Display> Problem<T> {
 		Ok(())
 	}
 
-	pub fn print_clauses(&self, writer: &mut io::Write) -> io::Result<()> {
+	pub fn print_clauses(&self, writer: &mut impl io::Write) -> io::Result<()> {
 		for clause in &self.clauses {
 			for lit in clause.iter() {
-				write!(writer,
-				       "{}{} ",
-				       if lit.negated() { "-" } else { " " },
-				       self.variable_names[lit.id()])?;
+				write!(
+					writer,
+					"{}{} ",
+					if lit.negated() { "-" } else { " " },
+					self.variable_names[lit.id()]
+				)?;
 			}
-			writeln!(writer, "")?;
+			writeln!(writer)?;
 		}
 		Ok(())
 	}
 
-	pub fn print_conflict_histo(&self, writer: &mut io::Write) -> io::Result<()> {
-		writeln!(writer,
-		         "{} conflicts: {}",
-		         self.num_conflicts,
-		         self.conflict_lens)?;
+	pub fn print_conflict_histo(&self, writer: &mut impl io::Write) -> io::Result<()> {
+		writeln!(writer, "{} conflicts: {}", self.num_conflicts, self.conflict_lens)?;
 		let mut x = 0u64;
 		for i in 0..self.conflict_lens.bins.len() {
 			x += self.conflict_lens.bins[i] * ((i + 1) as u64);
@@ -48,11 +45,8 @@ impl<T: fmt::Display> Problem<T> {
 		writeln!(writer, "  of total complexity {}", x)
 	}
 
-	pub fn print_dimacs(&self, writer: &mut io::Write) -> io::Result<()> {
-		writeln!(writer,
-		         "p cnf {} {}",
-		         self.active_variables,
-		         self.clauses.len())?;
+	pub fn print_dimacs(&self, writer: &mut impl io::Write) -> io::Result<()> {
+		writeln!(writer, "p cnf {} {}", self.active_variables, self.clauses.len())?;
 		for clause in self.clauses.iter() {
 			for lit in clause.iter() {
 				if lit.negated() {

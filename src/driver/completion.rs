@@ -1,5 +1,7 @@
 use std::io;
+
 use clap::{App, AppSettings, Arg, ArgMatches, Shell};
+
 use super::errors::*;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {

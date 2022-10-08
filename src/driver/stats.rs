@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use clap::{ArgMatches, App, AppSettings};
+use clap::{App, AppSettings, ArgMatches};
 
 use super::errors::*;
 
@@ -17,10 +17,10 @@ pub fn main(_: &ArgMatches) -> Result<()> {
 	Ok(())
 }
 
-fn print(f: &mut Write) -> Result<()> {
+fn print(f: &mut impl Write) -> Result<()> {
 	writeln!(f, "General Purpose AST stats:")?;
 	::gp::ast::util::print_stats(f, "  ")?;
-	writeln!(f, "")?;
+	writeln!(f)?;
 
 	writeln!(f, "CNF Problem stats:")?;
 	::cnf::util::print_stats(f, "  ")?;

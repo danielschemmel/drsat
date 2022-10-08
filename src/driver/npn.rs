@@ -1,26 +1,32 @@
-use clap::{ArgMatches, Arg, App, AppSettings};
+use clap::{App, AppSettings, Arg, ArgMatches};
+use io::open_string;
+use SolverResult;
 
 use super::errors::*;
-use SolverResult;
-use io::open_string;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app
 		.about("Parse and solve a npn query")
 		.setting(AppSettings::ColoredHelp)
-		.arg(Arg::with_name("query")
-		       .required(true)
-		       .index(1)
-		       .takes_value(true)
-		       .value_name("QUERY")
-		       .help("A query in normal polish notation"))
-		.arg(Arg::with_name("time")
-		       .short("t")
-		       .long("time")
-		       .help("Time the solving process"))
-		.arg(Arg::with_name("dump-ast")
-		       .long("dump-ast")
-		       .help("Dump the AST of the problem after parsing it"))
+		.arg(
+			Arg::with_name("query")
+				.required(true)
+				.index(1)
+				.takes_value(true)
+				.value_name("QUERY")
+				.help("A query in normal polish notation"),
+		)
+		.arg(
+			Arg::with_name("time")
+				.short("t")
+				.long("time")
+				.help("Time the solving process"),
+		)
+		.arg(
+			Arg::with_name("dump-ast")
+				.long("dump-ast")
+				.help("Dump the AST of the problem after parsing it"),
+		)
 }
 
 pub fn main(matches: &ArgMatches) -> Result<()> {
@@ -29,8 +35,7 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	let mut sw = ::util::Stopwatch::new();
 
 	sw.start();
-	let mut problem = ::parser::npn::parse(&mut reader)
-		.chain_err(|| ErrorKind::Parse("-".into()))?;
+	let mut problem = ::parser::npn::parse(&mut reader).chain_err(|| ErrorKind::Parse("-".into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Parsing query: {}", sw);

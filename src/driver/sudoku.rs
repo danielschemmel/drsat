@@ -1,52 +1,61 @@
 use std::fs::File;
 
-use clap::{ArgMatches, Arg, App, AppSettings};
+use clap::{App, AppSettings, Arg, ArgMatches};
+use io::open_file;
 
 use super::errors::*;
-use io::open_file;
 
 pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 	app
 		.about("Parse and solve a sudoku puzzle")
 		.setting(AppSettings::ColoredHelp)
-		.arg(Arg::with_name("path")
-		       .required(true)
-		       .index(1)
-		       .takes_value(true)
-		       .value_name("FILE")
-		       .help("The path to the file containing the puzzle"))
-		.arg(Arg::with_name("time")
-		       .short("t")
-		       .long("time")
-		       .help("Time the solving process"))
-		.arg(Arg::with_name("all")
-		       .short("a")
-		       .long("all")
-		       .help("Give all solutions"))
-		.arg(Arg::with_name("deduce")
-		       .short("d")
-		       .long("deduce")
-		       .help("Simplify problem by deducing implications via sudoku rules"))
-		.arg(Arg::with_name("query")
-		       .short("q")
-		       .long("query")
-		       .takes_value(true)
-		       .value_name("FILE")
-		       .help("Write SAT query in dimacs cnf format to FILE"))
-		.arg(Arg::with_name("rows")
-		       .short("r")
-		       .long("rows")
-		       .takes_value(true)
-		       .default_value("3")
-		       .value_name("FILE")
-		       .help("Write SAT query in dimacs cnf format to FILE"))
-		.arg(Arg::with_name("cols")
-		       .short("c")
-		       .long("cols")
-		       .takes_value(true)
-		       .default_value("3")
-		       .value_name("FILE")
-		       .help("Write SAT query in dimacs cnf format to FILE"))
+		.arg(
+			Arg::with_name("path")
+				.required(true)
+				.index(1)
+				.takes_value(true)
+				.value_name("FILE")
+				.help("The path to the file containing the puzzle"),
+		)
+		.arg(
+			Arg::with_name("time")
+				.short("t")
+				.long("time")
+				.help("Time the solving process"),
+		)
+		.arg(Arg::with_name("all").short("a").long("all").help("Give all solutions"))
+		.arg(
+			Arg::with_name("deduce")
+				.short("d")
+				.long("deduce")
+				.help("Simplify problem by deducing implications via sudoku rules"),
+		)
+		.arg(
+			Arg::with_name("query")
+				.short("q")
+				.long("query")
+				.takes_value(true)
+				.value_name("FILE")
+				.help("Write SAT query in dimacs cnf format to FILE"),
+		)
+		.arg(
+			Arg::with_name("rows")
+				.short("r")
+				.long("rows")
+				.takes_value(true)
+				.default_value("3")
+				.value_name("FILE")
+				.help("Write SAT query in dimacs cnf format to FILE"),
+		)
+		.arg(
+			Arg::with_name("cols")
+				.short("c")
+				.long("cols")
+				.takes_value(true)
+				.default_value("3")
+				.value_name("FILE")
+				.help("Write SAT query in dimacs cnf format to FILE"),
+		)
 }
 
 pub fn main(matches: &ArgMatches) -> Result<()> {
@@ -60,16 +69,14 @@ pub fn main(matches: &ArgMatches) -> Result<()> {
 	let mut sw = ::util::Stopwatch::new();
 
 	sw.start();
-	let mut reader = open_file(path)
-		.chain_err(|| ErrorKind::Parse(path.into()))?;
+	let mut reader = open_file(path).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Opening file: {}", sw);
 	}
 
 	sw.start();
-	let mut board = ::parser::sudoku::parse(&mut reader, rows, cols)
-		.chain_err(|| ErrorKind::Parse(path.into()))?;
+	let mut board = ::parser::sudoku::parse(&mut reader, rows, cols).chain_err(|| ErrorKind::Parse(path.into()))?;
 	sw.stop();
 	if time {
 		println!("[T] Parsing board: {}", sw);

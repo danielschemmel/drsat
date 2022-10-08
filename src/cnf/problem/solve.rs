@@ -1,10 +1,10 @@
 use std::fmt;
 
+use cnf::clause::Apply;
 use util::IndexedVec;
+use SolverResult;
 
 use super::{Clause, Literal, Problem, VariableId, VARIABLE_ID_MAX};
-use cnf::clause::Apply;
-use SolverResult;
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn solve(&mut self) -> SolverResult {
@@ -50,11 +50,14 @@ impl<T: fmt::Display> Problem<T> {
 			self.last_conflict[lit.id()] = self.num_conflicts;
 			debug_assert!(self.variables[lit.id()].has_value());
 		}
-		debug_assert!(self.clauses[cid]
-		                .iter()
-		                .map(|lit| self.variables[lit.id()].get_depth())
-		                .max()
-		                .unwrap() == self.depth);
+		debug_assert!(
+			self.clauses[cid]
+				.iter()
+				.map(|lit| self.variables[lit.id()].get_depth())
+				.max()
+				.unwrap()
+				== self.depth
+		);
 		let mut marks = IndexedVec::<VariableId, bool>::new();
 		marks.resize(self.variables.len(), false);
 		let mut lits = IndexedVec::<VariableId, Literal>::new();
@@ -117,9 +120,7 @@ impl<T: fmt::Display> Problem<T> {
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id()].has_value());
 			self.backjump();
-			self
-				.conflict_lens
-				.add(self.clauses.last().unwrap().len() as usize - 1);
+			self.conflict_lens.add(self.clauses.last().unwrap().len() as usize - 1);
 			self
 				.clauses
 				.last()
@@ -132,9 +133,7 @@ impl<T: fmt::Display> Problem<T> {
 	}
 
 	fn subsumption_check(&self, vid: VariableId, marks: &mut IndexedVec<VariableId, bool>) -> bool {
-		for id in self.clauses[self.variables[vid].get_ante()]
-		      .iter()
-		      .map(|lit| lit.id()) {
+		for id in self.clauses[self.variables[vid].get_ante()].iter().map(|lit| lit.id()) {
 			if vid != id && !marks[id] && self.variables[id].get_depth() != 0 {
 				if self.variables[id].get_ante() != ::std::usize::MAX && self.subsumption_check(id, marks) {
 					marks[id] = true;
@@ -149,7 +148,7 @@ impl<T: fmt::Display> Problem<T> {
 	pub fn minimize(&self, lits: &mut IndexedVec<VariableId, Literal>, mut marks: IndexedVec<VariableId, bool>) {
 		let mut i = 0;
 		while i < lits.len() {
-			let ref var = self.variables[lits[i].id()];
+			let var = &self.variables[lits[i].id()];
 			if var.get_ante() != ::std::usize::MAX && var.get_depth() != self.depth {
 				if var.get_depth() == 0 || self.subsumption_check(lits[i].id(), &mut marks) {
 					lits.swap_remove(i);
@@ -168,7 +167,7 @@ impl<T: fmt::Display> Problem<T> {
 			if self.applications.is_empty() {
 				break;
 			}
-			let ref mut var = self.variables[*self.applications.last().unwrap()];
+			let var = &mut self.variables[*self.applications.last().unwrap()];
 			if self.depth == var.get_depth() {
 				break;
 			}
@@ -195,7 +194,8 @@ impl<T: fmt::Display> Problem<T> {
 		let nalpha = 1.0 - self.alpha;
 		for id in self.plays.as_mut_vec().drain(..) {
 			let q = self.variables[id].q_mut();
-			*q = nalpha * *q + multiplier / ((self.num_conflicts - self.last_conflict[id] + 1) as f64); // FIXME: explicit conversion is fugly
+			*q = nalpha * *q + multiplier / ((self.num_conflicts - self.last_conflict[id] + 1) as f64);
+			// FIXME: explicit conversion is fugly
 		}
 	}
 
@@ -204,8 +204,8 @@ impl<T: fmt::Display> Problem<T> {
 			.variables
 			.iter()
 			.enumerate()
-			.filter(|&(_, ref var)| !var.has_value())
-			.max_by(|&(_, ref a), &(_, ref b)| a.q().partial_cmp(b.q()).unwrap())
+			.filter(|(_, var)| !var.has_value())
+			.max_by(|(_, a), (_, b)| a.q().partial_cmp(b.q()).unwrap())
 			.unwrap()
 			.0 as VariableId; // FIXME: get rid of the conversion
 		self.plays.push(choice);
@@ -221,7 +221,7 @@ impl<T: fmt::Display> Problem<T> {
 		loop {
 			debug_assert!(self.variables[id].has_value());
 			let val = self.variables[id].get_value();
-			if 0 != self.variables[id].get_clauses(val).len() {
+			if !self.variables[id].get_clauses(val).is_empty() {
 				let mut ci: usize = 0;
 				let mut cid = self.variables[id].get_clauses(val)[ci];
 				loop {
@@ -232,7 +232,7 @@ impl<T: fmt::Display> Problem<T> {
 						Apply::Unit(lit) => {
 							debug_assert!(!self.variables[lit.id()].has_value());
 							self.variables[lit.id()].set(!lit.negated(), self.depth, cid);
-							clause.update_glue(&mut self.variables, self.depth);
+							clause.update_glue(&self.variables, self.depth);
 							self.applications.push(lit.id());
 							self.plays.push(lit.id());
 						}
@@ -271,10 +271,10 @@ impl<T: fmt::Display> Problem<T> {
 		for var in self.variables.iter_mut() {
 			var.clear_watched();
 		}
-		self.clauses[self.irreducible..].sort_by_key(|ref clause| clause.get_glue());
+		self.clauses[self.irreducible..].sort_by_key(|clause| clause.get_glue());
 		self.irreducible += self.clauses[self.irreducible..]
 			.iter()
-			.take_while(|ref clause| clause.get_glue() == 2)
+			.take_while(|clause| clause.get_glue() == 2)
 			.count();
 		let truncate = self.clauses.len() - (self.clauses.len() - self.irreducible) / 2;
 		self.clauses.truncate(truncate);

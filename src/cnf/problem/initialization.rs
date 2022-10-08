@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::fmt;
 
 use util::{Histo, IndexedVec};
+use SolverResult;
 
 use super::{Clause, Literal, Problem, Variable, VariableId};
-use SolverResult;
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn new(names: Vec<T>, mut clauses: Vec<Vec<Literal>>) -> Problem<T> {
@@ -18,21 +18,21 @@ impl<T: fmt::Display> Problem<T> {
 		let mut problem = Problem {
 			alpha: 0.4,
 			gc_count: 0,
-			variables: variables,
+			variables,
 			variable_names: IndexedVec::from_vec(names),
 			clauses: clauses
 				.into_iter()
 				.map(|c| Clause::new(IndexedVec::from_vec(c), 1))
 				.collect(),
 			applications: IndexedVec::with_capacity(varcount),
-			irreducible: irreducible,
+			irreducible,
 			num_conflicts: 0,
-			last_conflict: last_conflict,
+			last_conflict,
 			plays: IndexedVec::with_capacity(varcount),
 			depth: 0,
-			active_variables: active_variables,
+			active_variables,
 			conflict_lens: Histo::new(),
-			solution: solution,
+			solution,
 		};
 		if problem.solution == SolverResult::Unknown {
 			problem.initialize();
@@ -48,9 +48,7 @@ impl<T: fmt::Display> Problem<T> {
 		for i in 0..self.clauses.len() {
 			let len = self.clauses[i].len();
 			for (id, negated) in self.clauses[i].iter().map(|lit| lit.disassemble()) {
-				*counters[id as usize][negated as usize]
-				   .entry(len as i32)
-				   .or_insert(0) += 1; // FIXME: this cast is only mostly safe
+				*counters[id as usize][negated as usize].entry(len as i32).or_insert(0) += 1; // FIXME: this cast is only mostly safe
 			}
 			self.clauses[i].initialize_watched(i, &mut self.variables);
 		}
@@ -77,12 +75,12 @@ impl<T: fmt::Display> Problem<T> {
 			}
 		}
 		let m: f64 = *self
-		                .variables
-		                .iter()
-		                .filter(|var| !var.has_value())
-		                .map(|v| v.q())
-		                .max_by(|a, b| a.partial_cmp(b).unwrap())
-		                .unwrap();
+			.variables
+			.iter()
+			.filter(|var| !var.has_value())
+			.map(|v| v.q())
+			.max_by(|a, b| a.partial_cmp(b).unwrap())
+			.unwrap();
 		for v in self.variables.iter_mut() {
 			*v.q_mut() /= m;
 		}

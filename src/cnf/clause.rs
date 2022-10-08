@@ -1,5 +1,7 @@
 use std::io;
+
 use util::IndexedVec;
+
 use super::{Literal, Variable, VariableId};
 
 #[derive(Debug)]
@@ -18,13 +20,17 @@ pub enum Apply {
 impl Clause {
 	pub fn new(literals: IndexedVec<VariableId, Literal>, glue: VariableId) -> Clause {
 		Clause {
-			literals: literals,
+			literals,
 			watched: [0, 1],
-			glue: glue,
+			glue,
 		}
 	}
 
-	pub fn from_learned(mut literals: IndexedVec<VariableId, Literal>, variables: &IndexedVec<VariableId, Variable>, max_depth: VariableId) -> (VariableId, Literal, Clause) {
+	pub fn from_learned(
+		mut literals: IndexedVec<VariableId, Literal>,
+		variables: &IndexedVec<VariableId, Variable>,
+		max_depth: VariableId,
+	) -> (VariableId, Literal, Clause) {
 		literals.sort();
 		let mut marks = IndexedVec::<VariableId, bool>::new();
 		marks.resize(max_depth + 1, false);
@@ -33,14 +39,13 @@ impl Clause {
 		let mut pa = 0;
 		let mut db = 0;
 		let mut pb = 0;
-		debug_assert!(literals
-		                .iter()
-		                .all(|lit| variables[lit.id()].has_value()));
+		debug_assert!(literals.iter().all(|lit| variables[lit.id()].has_value()));
 		for (i, depth) in literals
-		      .iter()
-		      .map(|lit| variables[lit.id()].get_depth())
-		      .enumerate()
-		      .map(|(i, depth)| (i as VariableId, depth)) {
+			.iter()
+			.map(|lit| variables[lit.id()].get_depth())
+			.enumerate()
+			.map(|(i, depth)| (i as VariableId, depth))
+		{
 			if !marks[depth] {
 				glue += 1;
 				marks[depth] = true;
@@ -56,20 +61,26 @@ impl Clause {
 			}
 		}
 		let lit = literals[pa];
-		(db,
-		 lit,
-		 Clause {
-		   literals: literals,
-		   watched: [pa, pb],
-		   glue: glue,
-		 })
+		(
+			db,
+			lit,
+			Clause {
+				literals,
+				watched: [pa, pb],
+				glue,
+			},
+		)
 	}
 
 	pub fn iter(&self) -> ::std::slice::Iter<Literal> {
 		self.literals.iter()
 	}
 
-	pub fn print<T: ::std::fmt::Display>(&self, f: &mut io::Write, variable_names: &IndexedVec<VariableId, T>) -> io::Result<()> {
+	pub fn print<T: ::std::fmt::Display>(
+		&self,
+		f: &mut impl io::Write,
+		variable_names: &IndexedVec<VariableId, T>,
+	) -> io::Result<()> {
 		for (i, literal) in self.literals.iter().enumerate() {
 			if i != 0 {
 				write!(f, " ")?;
@@ -86,10 +97,7 @@ impl Clause {
 		let mut marks = IndexedVec::<VariableId, bool>::new();
 		marks.resize(max_depth + 1, false);
 		let mut glue = 0;
-		for depth in self
-		      .literals
-		      .iter()
-		      .map(|lit| variables[lit.id()].get_depth()) {
+		for depth in self.literals.iter().map(|lit| variables[lit.id()].get_depth()) {
 			if !marks[depth] {
 				glue += 1;
 				marks[depth] = true;
@@ -171,13 +179,13 @@ impl Clause {
 			if i + 1 == self.literals.len() {
 				i = 0;
 			} else {
-				i = i + 1;
+				i += 1;
 			}
 			if i == self.watched[1] {
 				if i + 1 == self.literals.len() {
 					i = 0;
 				} else {
-					i = i + 1;
+					i += 1;
 				}
 			}
 			if i == start {
@@ -228,20 +236,27 @@ impl Clause {
 		}
 	}
 
-	fn percolate_sat(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>, start: VariableId, mut pos: VariableId, lit: Literal) {
+	fn percolate_sat(
+		&mut self,
+		cid: usize,
+		variables: &mut IndexedVec<VariableId, Variable>,
+		start: VariableId,
+		mut pos: VariableId,
+		lit: Literal,
+	) {
 		let mut mind = variables[lit.id()].get_depth();
 		let mut i = pos;
 		loop {
 			if i + 1 == self.literals.len() {
 				i = 0;
 			} else {
-				i = i + 1;
+				i += 1;
 			}
 			if i == self.watched[1] {
 				if i + 1 == self.literals.len() {
 					i = 0;
 				} else {
-					i = i + 1;
+					i += 1;
 				}
 			}
 			if i == start {
@@ -256,7 +271,7 @@ impl Clause {
 		if variables[self.literals[pos].id()].get_depth() == 0 {
 			variables[self.literals[self.watched[0]].id()].unwatch(cid, self.literals[self.watched[0]].negated());
 			variables[self.literals[self.watched[1]].id()].unwatch(cid, self.literals[self.watched[1]].negated());
-			//self.glue = ::std::usize::MAX; // why does this actually *hurt*?!
+		//self.glue = ::std::usize::MAX; // why does this actually *hurt*?!
 		} else if pos != self.watched[0] {
 			if pos != self.watched[1] {
 				variables[self.literals[self.watched[0]].id()].unwatch(cid, self.literals[self.watched[0]].negated());

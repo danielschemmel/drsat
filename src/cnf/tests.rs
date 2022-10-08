@@ -1,5 +1,6 @@
-use super::*;
 use SolverResult;
+
+use super::*;
 
 #[test]
 fn sat1() {

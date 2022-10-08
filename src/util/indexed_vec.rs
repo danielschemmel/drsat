@@ -34,7 +34,8 @@ pub struct IndexedVec<Key, Value> {
 }
 
 impl<Key, Value> IndexedVec<Key, Value>
-  where Key: USizeCast
+where
+	Key: USizeCast,
 {
 	pub fn new() -> IndexedVec<Key, Value> {
 		IndexedVec {
@@ -58,7 +59,8 @@ impl<Key, Value> IndexedVec<Key, Value>
 	}
 
 	pub fn len(&self) -> Key
-		where Key: USizeCast
+	where
+		Key: USizeCast,
 	{
 		Key::from_usize(self.data.len())
 	}
@@ -89,8 +91,9 @@ impl<Key, Value> IndexedVec<Key, Value>
 }
 
 impl<Key, Value> IndexedVec<Key, Value>
-	where Key: USizeCast,
-	      Value: Clone
+where
+	Key: USizeCast,
+	Value: Clone,
 {
 	pub fn resize(&mut self, new_len: Key, value: Value) {
 		self.data.resize(Key::to_usize(new_len), value)
@@ -112,7 +115,8 @@ impl<Key, Value> DerefMut for IndexedVec<Key, Value> {
 }
 
 impl<Key, Value> Index<Key> for IndexedVec<Key, Value>
-  where Key: USizeCast
+where
+	Key: USizeCast,
 {
 	type Output = Value;
 
@@ -122,17 +126,28 @@ impl<Key, Value> Index<Key> for IndexedVec<Key, Value>
 }
 
 impl<Key, Value> IndexMut<Key> for IndexedVec<Key, Value>
-  where Key: USizeCast
+where
+	Key: USizeCast,
 {
-	fn index_mut<'a>(&'a mut self, index: Key) -> &'a mut Value {
+	fn index_mut(&mut self, index: Key) -> &mut Value {
 		&mut self.data[index.to_usize()]
 	}
 }
 
 impl<Key, Value> fmt::Debug for IndexedVec<Key, Value>
-  where Value: fmt::Debug
+where
+	Value: fmt::Debug,
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		(&self.data as &fmt::Debug).fmt(f)
+		self.data.fmt(f)
+	}
+}
+
+impl<Key, Value> Default for IndexedVec<Key, Value>
+where
+	Key: USizeCast,
+{
+	fn default() -> Self {
+		Self::new()
 	}
 }

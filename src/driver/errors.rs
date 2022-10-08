@@ -23,12 +23,12 @@ impl Error {
 	// 10 is reserved as the SAT competition result "SATISFIABLE"
 	// 20 is reserved as the SAT competition result "UNSATISFIABLE"
 	pub fn code(&self) -> i32 {
-		match self.kind() {
-			&ErrorKind::Parse(_) => 2,
-			&ErrorKind::ParseInt(_) => 2,
-			&ErrorKind::Io(_) => 100,
-			&ErrorKind::RawIo(_) => 100,
-			&ErrorKind::Msg(_) => 126,
+		match *self.kind() {
+			ErrorKind::Parse(_) => 2,
+			ErrorKind::ParseInt(_) => 2,
+			ErrorKind::Io(_) => 100,
+			ErrorKind::RawIo(_) => 100,
+			ErrorKind::Msg(_) => 126,
 			_ => 127,
 		}
 	}

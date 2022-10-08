@@ -1,5 +1,4 @@
-use super::Node;
-use super::Variable;
+use super::{Node, Variable};
 
 #[derive(Debug)]
 pub struct And {
@@ -13,5 +12,11 @@ impl And {
 			nodes: Vec::new(),
 			variables: Vec::new(),
 		}
+	}
+}
+
+impl Default for And {
+	fn default() -> Self {
+		Self::new()
 	}
 }

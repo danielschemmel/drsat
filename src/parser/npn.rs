@@ -9,11 +9,11 @@ fn is_ws(byte: u8) -> bool {
 	byte == b' ' || x < 5
 }
 
-fn skip_ws(reader: &mut BufRead) -> Result<()> {
+fn skip_ws(reader: &mut impl BufRead) -> Result<()> {
 	loop {
 		let (skip, len) = {
 			let buf = reader.fill_buf()?;
-			if buf.len() == 0 {
+			if buf.is_empty() {
 				return Ok(());
 			}
 
@@ -29,11 +29,11 @@ fn skip_ws(reader: &mut BufRead) -> Result<()> {
 	}
 }
 
-fn skip_past_eol(reader: &mut BufRead) -> Result<()> {
+fn skip_past_eol(reader: &mut impl BufRead) -> Result<()> {
 	loop {
 		let (skip, len) = {
 			let buf = reader.fill_buf()?;
-			if buf.len() == 0 {
+			if buf.is_empty() {
 				return Ok(());
 			}
 
@@ -47,12 +47,12 @@ fn skip_past_eol(reader: &mut BufRead) -> Result<()> {
 	}
 }
 
-fn skip_comments(reader: &mut BufRead) -> Result<()> {
+fn skip_comments(reader: &mut impl BufRead) -> Result<()> {
 	loop {
 		skip_ws(reader)?;
 		let peek = {
 			let buf = reader.fill_buf()?;
-			if buf.len() == 0 {
+			if buf.is_empty() {
 				return Ok(());
 			}
 			buf[0]
@@ -65,14 +65,14 @@ fn skip_comments(reader: &mut BufRead) -> Result<()> {
 	}
 }
 
-fn parse_usize(reader: &mut BufRead) -> Result<usize> {
+fn parse_usize(reader: &mut impl BufRead) -> Result<usize> {
 	let mut result: usize = 0;
 	let mut nothing = true;
 	let mut done = false;
 	while !done {
 		let read = {
 			let buf = reader.fill_buf()?;
-			if buf.len() == 0 {
+			if buf.is_empty() {
 				if nothing {
 					bail!(ErrorKind::ExpectedInt);
 				} else {
@@ -104,20 +104,20 @@ fn parse_usize(reader: &mut BufRead) -> Result<usize> {
 	Ok(result)
 }
 
-fn parse_header(reader: &mut BufRead) -> Result<(usize, usize)> {
+fn parse_header(reader: &mut impl BufRead) -> Result<(usize, usize)> {
 	skip_ws(reader)?;
 	if !{
-		    let buf = reader.fill_buf()?;
-		    buf.len() >= 1 && buf[0] == b'p'
-		   } {
+		let buf = reader.fill_buf()?;
+		!buf.is_empty() && buf[0] == b'p'
+	} {
 		bail!(ErrorKind::ExpectedP);
 	}
 	reader.consume(1);
 	skip_ws(reader)?;
 	if !{
-		    let buf = reader.fill_buf()?;
-		    buf.len() >= 3 && buf[0] == b'c' && buf[1] == b'n' && buf[2] == b'f'
-		   } {
+		let buf = reader.fill_buf()?;
+		buf.len() >= 3 && buf[0] == b'c' && buf[1] == b'n' && buf[2] == b'f'
+	} {
 		bail!(ErrorKind::ExpectedCNF);
 	}
 	reader.consume(3);
@@ -128,11 +128,11 @@ fn parse_header(reader: &mut BufRead) -> Result<(usize, usize)> {
 	Ok((variables, clauses))
 }
 
-fn parse_variable(reader: &mut BufRead) -> Result<(usize, bool)> {
+fn parse_variable(reader: &mut impl BufRead) -> Result<(usize, bool)> {
 	skip_ws(reader)?;
 	let neg = {
 		let buf = reader.fill_buf()?;
-		buf.len() >= 1 && buf[0] == b'-'
+		!buf.is_empty() && buf[0] == b'-'
 	};
 	if neg {
 		reader.consume(1);
@@ -142,7 +142,7 @@ fn parse_variable(reader: &mut BufRead) -> Result<(usize, bool)> {
 	Ok((name, neg))
 }
 
-fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder<usize>) -> Result<()> {
+fn parse_clause(reader: &mut impl BufRead, builder: &mut ProblemBuilder<usize>) -> Result<()> {
 	let mut clause = builder.new_clause();
 	loop {
 		let (name, neg) = parse_variable(reader)?;
@@ -160,7 +160,7 @@ fn parse_clause(reader: &mut BufRead, builder: &mut ProblemBuilder<usize>) -> Re
 	}
 }
 
-pub fn parse(reader: &mut BufRead) -> Result<Problem<usize>> {
+pub fn parse(reader: &mut impl BufRead) -> Result<Problem<usize>> {
 	skip_comments(reader)?;
 	let mut builder = ProblemBuilder::new();
 	let (variables, clauses) = parse_header(reader)?;

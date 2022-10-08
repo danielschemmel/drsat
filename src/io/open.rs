@@ -7,7 +7,7 @@ use xz2::read::XzDecoder;
 
 use super::errors::*;
 
-pub fn open_file(path: &str) -> Result<Box<BufRead>> {
+pub fn open_file(path: &str) -> Result<Box<dyn BufRead>> {
 	let file = File::open(path)?;
 	if path.ends_with(".bz2") {
 		Ok(Box::new(BufReader::new(BzDecoder::new(file))))
@@ -22,6 +22,6 @@ pub fn open_file(path: &str) -> Result<Box<BufRead>> {
 
 // FIXME: signature differs from open_file's
 // note: &[u8] implements BufRead
-pub fn open_string<'a>(value: &'a str) -> Result<&'a [u8]> {
+pub fn open_string(value: &str) -> Result<&[u8]> {
 	Ok(value.as_bytes())
 }

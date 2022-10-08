@@ -18,6 +18,12 @@ impl Histo {
 	}
 }
 
+impl Default for Histo {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
 impl fmt::Display for Histo {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{:?}", self.bins)

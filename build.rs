@@ -1,13 +1,13 @@
 use std::env;
-use std::fs::{File, create_dir_all};
-use std::io::{Write, Read, BufWriter};
+use std::fs::{create_dir_all, File};
+use std::io::{BufWriter, Read, Write};
 use std::path::Path;
 
 #[macro_use]
 extern crate error_chain;
 
 extern crate git2;
-use git2::{Repository, DescribeOptions, DescribeFormatOptions};
+use git2::{DescribeFormatOptions, DescribeOptions, Repository};
 
 mod errors {
 	error_chain! {
@@ -41,28 +41,23 @@ fn update_file(path: &Path, content: &str) -> Result<()> {
 
 fn format_version(version: &str) -> String {
 	let cargo = env::var_os("CARGO_PKG_VERSION")
-		.unwrap_or("UNKNOWN".into())
+		.unwrap_or_else(|| "UNKNOWN".into())
 		.into_string()
-		.unwrap_or("UNKNOWN".into());
-	format!("pub const VERSION: &'static str = {:?};\n",
-	        format!("{} {}", cargo, version))
+		.unwrap_or_else(|_| "UNKNOWN".into());
+	format!("pub const VERSION: &str = {:?};\n", format!("{} {}", cargo, version))
 }
 
 fn repository_description<P: AsRef<Path>>(dir: P) -> Result<String> {
 	let repo = Repository::discover(dir)?;
-	let desc = repo
-		.describe(&DescribeOptions::new()
-		             .describe_tags()
-		             .show_commit_oid_as_fallback(true))?;
-	let content = desc
-		.format(Some(DescribeFormatOptions::new()
-		               .dirty_suffix(".+")
-		               .abbreviated_size(16)))?;
+	let desc = repo.describe(DescribeOptions::new().describe_tags().show_commit_oid_as_fallback(true))?;
+	let content = desc.format(Some(
+		DescribeFormatOptions::new().dirty_suffix(".+").abbreviated_size(16),
+	))?;
 	Ok(content)
 }
 
 fn write_version<P: AsRef<Path>>(dir: P) -> Result<()> {
-	let repo_version = repository_description(dir).unwrap_or(String::from("UNKNOWN"));
+	let repo_version = repository_description(dir).unwrap_or_else(|_| String::from("UNKNOWN"));
 	let content = format_version(&repo_version);
 
 	let path = env::var_os("OUT_DIR").ok_or(ErrorKind::MissingEnvVar)?;

@@ -116,3 +116,9 @@ impl Variable {
 		&mut self.q
 	}
 }
+
+impl Default for Variable {
+	fn default() -> Self {
+		Self::new()
+	}
+}
