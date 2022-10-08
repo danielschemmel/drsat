@@ -13,7 +13,7 @@ pub fn open_file(path: &std::path::Path) -> Result<Box<dyn BufRead>> {
 		Some("bz2") => Ok(Box::new(BufReader::new(BzDecoder::new(file)))),
 		Some("gz") => Ok(Box::new(BufReader::new(GzDecoder::new(file)))),
 		Some("xz") => Ok(Box::new(BufReader::new(XzDecoder::new(file)))),
-		Some("zst"|"zstd") => Ok(Box::new(BufReader::new(zstd::Decoder::new(file)?))),
+		Some("zst" | "zstd") => Ok(Box::new(BufReader::new(zstd::Decoder::new(file)?))),
 		_ => Ok(Box::new(BufReader::new(file))),
 	}
 }
