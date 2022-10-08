@@ -9,14 +9,12 @@ use super::errors::*;
 
 pub fn open_file(path: &std::path::Path) -> Result<Box<dyn BufRead>> {
 	let file = File::open(path)?;
-	if path.ends_with(".bz2") {
-		Ok(Box::new(BufReader::new(BzDecoder::new(file))))
-	} else if path.ends_with(".gz") {
-		Ok(Box::new(BufReader::new(GzDecoder::new(file))))
-	} else if path.ends_with(".xz") {
-		Ok(Box::new(BufReader::new(XzDecoder::new(file))))
-	} else {
-		Ok(Box::new(BufReader::new(file)))
+	match path.extension().and_then(|extension| extension.to_str()) {
+		Some("bz2") => Ok(Box::new(BufReader::new(BzDecoder::new(file)))),
+		Some("gz") => Ok(Box::new(BufReader::new(GzDecoder::new(file)))),
+		Some("xz") => Ok(Box::new(BufReader::new(XzDecoder::new(file)))),
+		Some("zst"|"zstd") => Ok(Box::new(BufReader::new(zstd::Decoder::new(file)?))),
+		_ => Ok(Box::new(BufReader::new(file))),
 	}
 }
 

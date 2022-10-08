@@ -35,3 +35,4 @@ clap_complete = { version = "4.0.2" }
 error-chain = { version = "0.12.4" }
 flate2 = { version = "1.0.24" }
 xz2 = { version = "0.1.7" }
+zstd = { version = "0.11" }
