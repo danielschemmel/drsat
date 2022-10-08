@@ -7,7 +7,7 @@ use libdrsat::{driver, VERSION};
 
 const NAME: &str = "dimacs";
 
-fn gen_cli() -> App<'static, 'static> {
+fn gen_cli() -> App<'static> {
 	driver::dimacs::setup_command(
 		App::new(NAME)
 			.version(VERSION)

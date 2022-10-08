@@ -4,7 +4,7 @@ use super::errors::*;
 use crate::io::open_string;
 use crate::SolverResult;
 
-pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
+pub fn setup_command(app: App<'_>) -> App<'_> {
 	app
 		.about("Parse and solve a npn query")
 		.setting(AppSettings::ColoredHelp)
@@ -18,7 +18,7 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 		)
 		.arg(
 			Arg::with_name("time")
-				.short("t")
+				.short('t')
 				.long("time")
 				.help("Time the solving process"),
 		)

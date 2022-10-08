@@ -7,7 +7,7 @@ use libdrsat::{driver, VERSION};
 
 const NAME: &str = "sudoku";
 
-fn gen_cli() -> App<'static, 'static> {
+fn gen_cli() -> App<'static> {
 	driver::sudoku::setup_command(
 		App::new(NAME)
 			.version(VERSION)

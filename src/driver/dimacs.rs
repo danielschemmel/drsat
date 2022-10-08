@@ -4,7 +4,7 @@ use super::errors::*;
 use crate::io::open_file;
 use crate::SolverResult;
 
-pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
+pub fn setup_command(app: App<'_>) -> App<'_> {
 	app
 		.about("Parse and solve a dimacs file")
 		.setting(AppSettings::ColoredHelp)
@@ -18,19 +18,19 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 		)
 		.arg(
 			Arg::with_name("time")
-				.short("t")
+				.short('t')
 				.long("time")
 				.help("Time the solving process"),
 		)
 		.arg(
 			Arg::with_name("model")
-				.short("m")
+				.short('m')
 				.long("model")
 				.help("Print a model for satisfying results"),
 		)
 		.arg(
 			Arg::with_name("preprocess")
-				.short("p")
+				.short('p')
 				.long("preprocess")
 				.help("Dump a new dimacs file after preprocessing (note: this does not preserve names!)"),
 		)

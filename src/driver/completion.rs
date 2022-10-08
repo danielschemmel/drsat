@@ -1,17 +1,18 @@
 use std::io;
 
-use clap::{App, AppSettings, Arg, ArgMatches, Shell};
+use clap::{App, AppSettings, Arg, ArgMatches};
+use clap_complete::Shell;
 
 use super::errors::*;
 
-pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
+pub fn setup_command(app: App<'static>) -> App<'static> {
 	app
 		.about("Generate completion scripts for various shells")
 		.setting(AppSettings::ColoredHelp)
 		.arg(gen_arg().required(true).index(1))
 }
 
-pub fn gen_arg() -> Arg<'static, 'static> {
+pub fn gen_arg() -> Arg<'static> {
 	Arg::with_name("completion")
 		.help("Generate completion scripts for various shells")
 		.takes_value(true)
@@ -27,10 +28,10 @@ pub fn print_completion(mut app: App, shell: &str, name: &str) -> Result<()> {
 	let stdout = io::stdout();
 	let mut handle = stdout.lock();
 	match shell {
-		"bash" => app.gen_completions_to(name, Shell::Bash, &mut handle),
-		"fish" => app.gen_completions_to(name, Shell::Fish, &mut handle),
-		"zsh" => app.gen_completions_to(name, Shell::Zsh, &mut handle),
-		"posh" => app.gen_completions_to(name, Shell::PowerShell, &mut handle),
+		"bash" => clap_complete::generate(Shell::Bash, &mut app, name, &mut handle),
+		"fish" => clap_complete::generate(Shell::Fish, &mut app, name, &mut handle),
+		"zsh" => clap_complete::generate(Shell::Zsh, &mut app, name, &mut handle),
+		"posh" => clap_complete::generate(Shell::PowerShell, &mut app, name, &mut handle),
 		_ => unreachable!(),
 	}
 	Ok(())

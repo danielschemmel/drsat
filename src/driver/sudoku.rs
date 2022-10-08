@@ -5,7 +5,7 @@ use clap::{App, AppSettings, Arg, ArgMatches};
 use super::errors::*;
 use crate::io::open_file;
 
-pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
+pub fn setup_command(app: App<'_>) -> App<'_> {
 	app
 		.about("Parse and solve a sudoku puzzle")
 		.setting(AppSettings::ColoredHelp)
@@ -19,20 +19,20 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 		)
 		.arg(
 			Arg::with_name("time")
-				.short("t")
+				.short('t')
 				.long("time")
 				.help("Time the solving process"),
 		)
-		.arg(Arg::with_name("all").short("a").long("all").help("Give all solutions"))
+		.arg(Arg::with_name("all").short('a').long("all").help("Give all solutions"))
 		.arg(
 			Arg::with_name("deduce")
-				.short("d")
+				.short('d')
 				.long("deduce")
 				.help("Simplify problem by deducing implications via sudoku rules"),
 		)
 		.arg(
 			Arg::with_name("query")
-				.short("q")
+				.short('q')
 				.long("query")
 				.takes_value(true)
 				.value_name("FILE")
@@ -40,7 +40,7 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 		)
 		.arg(
 			Arg::with_name("rows")
-				.short("r")
+				.short('r')
 				.long("rows")
 				.takes_value(true)
 				.default_value("3")
@@ -49,7 +49,7 @@ pub fn setup_command<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
 		)
 		.arg(
 			Arg::with_name("cols")
-				.short("c")
+				.short('c')
 				.long("cols")
 				.takes_value(true)
 				.default_value("3")

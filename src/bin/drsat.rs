@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate clap;
 use clap::{App, AppSettings, SubCommand};
 
 extern crate libdrsat;
@@ -8,10 +6,10 @@ use libdrsat::{driver, VERSION};
 
 const NAME: &str = "drsat";
 
-fn gen_cli() -> App<'static, 'static> {
+fn gen_cli() -> App<'static> {
 	App::new(NAME)
 		.version(VERSION)
-		.about(crate_description!())
+		.about(clap::crate_description!())
 		.setting(AppSettings::ColoredHelp)
 		.setting(AppSettings::GlobalVersion)
 		.setting(AppSettings::SubcommandRequiredElseHelp)
@@ -30,12 +28,12 @@ fn print_version() -> Result<()> {
 
 fn run() -> Result<()> {
 	match gen_cli().get_matches().subcommand() {
-		("completion", Some(matches)) => libdrsat::driver::completion::run_command(gen_cli(), matches, NAME),
-		("dimacs", Some(matches)) => libdrsat::driver::dimacs::main(matches),
-		("npn", Some(matches)) => libdrsat::driver::npn::main(matches),
-		("stats", Some(matches)) => libdrsat::driver::stats::main(matches),
-		("sudoku", Some(matches)) => libdrsat::driver::sudoku::main(matches),
-		("version", Some(_)) => print_version(),
+		Some(("completion", matches)) => libdrsat::driver::completion::run_command(gen_cli(), matches, NAME),
+		Some(("dimacs", matches)) => libdrsat::driver::dimacs::main(matches),
+		Some(("npn", matches)) => libdrsat::driver::npn::main(matches),
+		Some(("stats", matches)) => libdrsat::driver::stats::main(matches),
+		Some(("sudoku", matches)) => libdrsat::driver::sudoku::main(matches),
+		Some(("version", _)) => print_version(),
 		_ => unreachable!(),
 	}
 }
