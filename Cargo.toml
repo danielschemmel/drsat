@@ -2,10 +2,12 @@
 name = "drsat"
 description = "SAT solver"
 version = "0.1.0"
-authors = ["Daniel Schemmel <daniel.schemmel@comsys.rwth-aachen.de>"]
-build = "build.rs"
+authors = ["Daniel Schemmel <daniel@schemmel.net>"]
+
+rust-version = "1.56.0"
 edition = "2021"
 
+build = "build.rs"
 default-run = "drsat"
 
 [lib]
@@ -13,6 +15,7 @@ name = "libdrsat"
 
 [profile.release]
 opt-level = 3
+codegen-units = 1
 lto = true # enabling this significantly increases compile time, but also seems to yield a > 10% speedup
 
 # check .cargo/config, which also contains the following:
@@ -25,10 +28,10 @@ small_variable_ids = []
 aggressive = [ "small_variable_ids" ]
 
 [build-dependencies]
-build-info-build = { version = "0.0.27"}
+build-info-build = { version = "0.0.28"}
 
 [dependencies]
-build-info = { version = "0.0.27"}
+build-info = { version = "0.0.28"}
 bzip2 = { version = "0.4.3" }
 clap = { version = "4.0.10", features = ["derive"] }
 clap_complete = { version = "4.0.2" }
