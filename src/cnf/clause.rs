@@ -117,6 +117,10 @@ impl Clause {
 		self.literals.len()
 	}
 
+	pub fn is_empty(&self) -> bool {
+		self.literals.is_empty()
+	}
+
 	/// The idea of this function is to distribute the (initial) watch list effort
 	/// fairly over all variables
 	pub fn initialize_watched(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>) {

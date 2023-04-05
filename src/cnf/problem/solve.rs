@@ -60,7 +60,7 @@ impl<T: fmt::Display> Problem<T> {
 		let mut marks = IndexedVec::<VariableId, bool>::new();
 		marks.resize(self.variables.len(), false);
 		let mut lits = IndexedVec::<VariableId, Literal>::new();
-		let mut queue = Vec::<usize>::with_capacity(self.clauses[cid].len() as usize);
+		let mut queue = Vec::<usize>::with_capacity(self.clauses[cid].len());
 		let mut implicated = VARIABLE_ID_MAX;
 		loop {
 			for (id, negated) in self.clauses[cid].iter().map(|lit| lit.disassemble()) {
@@ -119,7 +119,7 @@ impl<T: fmt::Display> Problem<T> {
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id()].has_value());
 			self.backjump();
-			self.conflict_lens.add(self.clauses.last().unwrap().len() as usize - 1);
+			self.conflict_lens.add(self.clauses.last().unwrap().len() - 1);
 			self
 				.clauses
 				.last()

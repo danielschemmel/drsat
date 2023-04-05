@@ -24,7 +24,7 @@ pub struct Problem<T: fmt::Display> {
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn model(&self) -> Vec<(&T, bool)> {
-		let mut result = Vec::with_capacity(self.variables.len() as usize);
+		let mut result = Vec::with_capacity(self.variables.len());
 		for (var, name) in self.variables.iter().zip(self.variable_names.iter()) {
 			debug_assert!(var.has_value());
 			result.push((name, var.get_value()));

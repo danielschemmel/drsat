@@ -40,14 +40,14 @@ impl<T: fmt::Display> Problem<T> {
 	}
 
 	fn initialize(&mut self) {
-		let mut counters = Vec::<[HashMap<i32, VariableId>; 2]>::with_capacity(self.variables.len() as usize);
+		let mut counters = Vec::<[HashMap<i32, VariableId>; 2]>::with_capacity(self.variables.len());
 		for _ in 0..self.variables.len() {
 			counters.push([HashMap::new(), HashMap::new()]);
 		}
 		for i in 0..self.clauses.len() {
 			let len = self.clauses[i].len();
 			for (id, negated) in self.clauses[i].iter().map(|lit| lit.disassemble()) {
-				*counters[id as usize][negated as usize].entry(len as i32).or_insert(0) += 1; // FIXME: this cast is only mostly safe
+				*counters[id][negated as usize].entry(len as i32).or_insert(0) += 1; // FIXME: this cast is only mostly safe
 			}
 			self.clauses[i].initialize_watched(i, &mut self.variables);
 		}
