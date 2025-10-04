@@ -4,8 +4,8 @@ description = "SAT solver"
 version = "0.1.0"
 authors = ["Daniel Schemmel <daniel@schemmel.net>"]
 
-rust-version = "1.56.0"
-edition = "2021"
+rust-version = "1.85"
+edition = "2024"
 
 build = "build.rs"
 default-run = "drsat"
