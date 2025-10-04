@@ -1,7 +1,7 @@
 use std::io;
 
-use crate::cnf::{Problem, ProblemBuilder};
 use crate::SolverResult;
+use crate::cnf::{Problem, ProblemBuilder};
 
 pub struct Board {
 	count: usize,
@@ -235,8 +235,7 @@ impl Board {
 				}
 				SolverResult::Sat => {
 					let model = problem.model();
-					let mut solution = Vec::new();
-					solution.resize(self.count * self.count, 0);
+					let mut solution = vec![0; self.count * self.count];
 					for t in model.iter().filter(|t| t.1) {
 						debug_assert!(t.1);
 						debug_assert_eq!(solution[*t.0 / self.count], 0);

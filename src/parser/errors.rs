@@ -1,34 +1,33 @@
-error_chain! {
-	foreign_links {
-		Io(::std::io::Error);
-	}
-	errors {
-		Overflow {
-			description("Integer overflow: Number is too large")
-		}
-		EmptyQuery {
-			description("Encountered an empty query (trivially SAT)")
-		}
-		EmptyClause {
-			description("Encountered an empty clause (trivially UNSAT)")
-		}
-		ExpectedInt {
-			description("Expected integral number")
-		}
-		ExpectedIntOrNeg {
-			description("Expected possibly negated integral number")
-		}
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+	#[error(transparent)]
+	Io(#[from] std::io::Error),
 
-		// dimacs specific
-		ExpectedP {
-			description("Expected dimacs problem type (\"p line\")")
-		}
-		ExpectedCNF {
-			description("The only supported dimacs problem type is \"cnf\"")
-		}
-		VariableCount(expected: usize, actual: usize) {
-			description("expected variable count does not match actually encountered variables")
-			display("Expected {} variables, but encountered {}", expected, actual)
-		}
-	}
+	#[error("Integer overflow: Number is too large")]
+	Overflow,
+
+	#[error("Encountered an empty query (trivially SAT)")]
+	EmptyQuery,
+
+	#[error("Encountered an empty clause (trivially UNSAT)")]
+	EmptyClause,
+
+	#[error("Expected integral number")]
+	ExpectedInt,
+
+	#[error("Expected possibly negated integral number")]
+	ExpectedIntOrNeg,
+
+	#[error("Encountered an unexpected byte {0:?}")]
+	UnexpectedByte(u8),
+
+	// dimacs specific
+	#[error("Expected dimacs problem type (\"p line\")")]
+	ExpectedP,
+
+	#[error("The only supported dimacs problem type is \"cnf\"")]
+	ExpectedCNF,
+
+	#[error("Expected {expected} variables, but encountered {actual}")]
+	VariableCount { expected: usize, actual: usize },
 }

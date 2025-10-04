@@ -1,6 +1,5 @@
-use super::errors::*;
-use crate::io::open_string;
 use crate::SolverResult;
+use crate::io::open_string;
 
 #[derive(clap::Parser, Debug)]
 #[clap(about = "Parse and solve a npn query", long_about = None)]
@@ -18,12 +17,15 @@ pub struct Cli {
 	dump_ast: bool,
 }
 
-pub fn main(args: Cli) -> Result<()> {
+pub fn main(args: Cli) -> Result<(), super::errors::Error> {
 	let mut reader = open_string(&args.query)?;
 	let mut sw = crate::util::Stopwatch::new();
 
 	sw.start();
-	let mut problem = crate::parser::npn::parse(&mut reader).chain_err(|| ErrorKind::Parse("-".into()))?;
+	let mut problem = crate::parser::npn::parse(&mut reader).map_err(|err| super::errors::Error::Parse {
+		source: err,
+		path: "-".into(),
+	})?;
 	sw.stop();
 	if args.time {
 		println!("[T] Parsing query: {}", sw);

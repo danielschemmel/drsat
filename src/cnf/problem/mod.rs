@@ -1,8 +1,8 @@
 use std::fmt;
 
-use super::{Clause, Literal, Variable, VariableId, VARIABLE_ID_MAX};
-use crate::util::{Histo, IndexedVec};
+use super::{Clause, Literal, VARIABLE_ID_MAX, Variable, VariableId};
 use crate::SolverResult;
+use crate::util::{Histo, IndexedVec};
 
 #[derive(Debug)]
 pub struct Problem<T: fmt::Display> {

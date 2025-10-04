@@ -1,7 +1,5 @@
-use std::io;
-
-error_chain! {
-	foreign_links {
-		Io(io::Error);
-	}
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+	#[error(transparent)]
+	Io(#[from] std::io::Error),
 }

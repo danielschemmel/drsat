@@ -6,16 +6,16 @@
 #[cfg(feature = "small_variable_ids")]
 mod variable_id_impl {
 	pub type VariableId = u32;
-	pub const VARIABLE_ID_MAX: VariableId = ::std::u32::MAX;
+	pub const VARIABLE_ID_MAX: VariableId = u32::MAX;
 }
 
 #[cfg(not(feature = "small_variable_ids"))]
 mod variable_id_impl {
 	pub type VariableId = usize;
-	pub const VARIABLE_ID_MAX: VariableId = ::std::usize::MAX;
+	pub const VARIABLE_ID_MAX: VariableId = usize::MAX;
 }
 
-pub use self::variable_id_impl::{VariableId, VARIABLE_ID_MAX};
+pub use self::variable_id_impl::{VARIABLE_ID_MAX, VariableId};
 
 #[derive(Debug)]
 pub struct Variable {
@@ -30,7 +30,7 @@ impl Variable {
 	pub fn new() -> Variable {
 		Variable {
 			watchlists: [Vec::new(), Vec::new()],
-			ante: ::std::usize::MAX,
+			ante: usize::MAX,
 			depth: VARIABLE_ID_MAX,
 			value: false,
 			q: 0.0,
@@ -69,7 +69,7 @@ impl Variable {
 	}
 
 	pub fn enable(&mut self, depth: VariableId) {
-		self.ante = ::std::usize::MAX;
+		self.ante = usize::MAX;
 		self.depth = depth;
 	}
 

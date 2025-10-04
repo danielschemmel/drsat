@@ -1,6 +1,5 @@
-use super::errors::*;
-use crate::io::open_file;
 use crate::SolverResult;
+use crate::io::open_file;
 
 #[derive(clap::Parser, Debug)]
 #[clap(about = "Parse and solve a dimacs file", long_about = None)]
@@ -22,19 +21,24 @@ pub struct Cli {
 	preprocess: bool,
 }
 
-pub fn main(args: Cli) -> Result<()> {
+pub fn main(args: Cli) -> Result<(), super::errors::Error> {
 	let mut sw = crate::util::Stopwatch::new();
 
 	sw.start();
-	let mut reader = open_file(&args.path).chain_err(|| ErrorKind::Parse(args.path.display().to_string()))?;
+	let mut reader = open_file(&args.path).map_err(|err| super::errors::Error::Read {
+		source: err,
+		path: args.path.display().to_string(),
+	})?;
 	sw.stop();
 	if args.time {
 		println!("[T] Opening file: {}", sw);
 	}
 
 	sw.start();
-	let mut problem =
-		crate::parser::dimacs::parse(&mut reader).chain_err(|| ErrorKind::Parse(args.path.display().to_string()))?;
+	let mut problem = crate::parser::dimacs::parse(&mut reader).map_err(|err| super::errors::Error::Parse {
+		source: err,
+		path: args.path.display().to_string(),
+	})?;
 	sw.stop();
 	if args.time {
 		println!("[T] Parsing and preprocessing file: {}", sw);

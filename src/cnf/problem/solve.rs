@@ -1,9 +1,9 @@
 use std::fmt;
 
-use super::{Clause, Literal, Problem, VariableId, VARIABLE_ID_MAX};
+use super::{Clause, Literal, Problem, VARIABLE_ID_MAX, VariableId};
+use crate::SolverResult;
 use crate::cnf::clause::Apply;
 use crate::util::IndexedVec;
-use crate::SolverResult;
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn solve(&mut self) -> SolverResult {
@@ -71,7 +71,7 @@ impl<T: fmt::Display> Problem<T> {
 					let d = self.variables[id].get_depth();
 					if d == self.depth {
 						let ante = self.variables[id].get_ante();
-						if ante == ::std::usize::MAX {
+						if ante == usize::MAX {
 							if implicated != VARIABLE_ID_MAX {
 								queue.push(self.variables[lits[implicated].id()].get_ante());
 								lits.swap_remove(implicated);
@@ -107,7 +107,7 @@ impl<T: fmt::Display> Problem<T> {
 			self.restart();
 			self.conflict_lens.add(0);
 			debug_assert!(!self.variables[lit.id()].has_value());
-			self.variables[lit.id()].set(!lit.negated(), self.depth, ::std::usize::MAX);
+			self.variables[lit.id()].set(!lit.negated(), self.depth, usize::MAX);
 			self.applications.push(lit.id());
 			let conflict = self.propagate();
 			self.active_variables -= self.applications.len();
@@ -119,7 +119,9 @@ impl<T: fmt::Display> Problem<T> {
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id()].has_value());
 			self.backjump();
-			self.conflict_lens.add((self.clauses.last().unwrap().len() - 1).try_into().unwrap());
+			self
+				.conflict_lens
+				.add((self.clauses.last().unwrap().len() - 1).try_into().unwrap());
 			self
 				.clauses
 				.last()
@@ -134,7 +136,7 @@ impl<T: fmt::Display> Problem<T> {
 	fn subsumption_check(&self, vid: VariableId, marks: &mut IndexedVec<VariableId, bool>) -> bool {
 		for id in self.clauses[self.variables[vid].get_ante()].iter().map(|lit| lit.id()) {
 			if vid != id && !marks[id] && self.variables[id].get_depth() != 0 {
-				if self.variables[id].get_ante() != ::std::usize::MAX && self.subsumption_check(id, marks) {
+				if self.variables[id].get_ante() != usize::MAX && self.subsumption_check(id, marks) {
 					marks[id] = true;
 				} else {
 					return false;
@@ -148,7 +150,7 @@ impl<T: fmt::Display> Problem<T> {
 		let mut i = 0;
 		while i < lits.len() {
 			let var = &self.variables[lits[i].id()];
-			if var.get_ante() != ::std::usize::MAX && var.get_depth() != self.depth {
+			if var.get_ante() != usize::MAX && var.get_depth() != self.depth {
 				if var.get_depth() == 0 || self.subsumption_check(lits[i].id(), &mut marks) {
 					lits.swap_remove(i);
 				} else {

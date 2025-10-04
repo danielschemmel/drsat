@@ -1,13 +1,11 @@
 use std::io::Read;
 
-use super::errors::*;
 use crate::sudoku::Board;
 
-pub fn parse(reader: &mut impl Read, rows: usize, cols: usize) -> Result<Board> {
+pub fn parse(reader: &mut impl Read, rows: usize, cols: usize) -> Result<Board, super::errors::Error> {
 	let mut board = Board::new(rows, cols);
 	let count = rows * cols;
-	let mut line = Vec::new();
-	line.resize(count, 0);
+	let mut line = vec![0; count];
 	reader.read_exact(&mut line)?;
 	for row in 0..count {
 		for (col, &c) in line.iter().enumerate() {
@@ -20,7 +18,7 @@ pub fn parse(reader: &mut impl Read, rows: usize, cols: usize) -> Result<Board> 
 			} else if c.is_ascii_uppercase() {
 				board.set(row, col, (c - b'A') as usize + 10);
 			} else {
-				bail!("Unexpected character"); // FIXME: use some proper error thingy
+				return Err(super::errors::Error::UnexpectedByte(c));
 			}
 		}
 		if row != count - 1 {

@@ -1,6 +1,5 @@
 use std::fs::File;
 
-use super::errors::*;
 use crate::io::open_file;
 
 #[derive(clap::Parser, Debug)]
@@ -33,22 +32,29 @@ pub struct Cli {
 	cols: usize,
 }
 
-pub fn main(args: Cli) -> Result<()> {
-	ensure!(args.rows > 0 && args.rows < 36, "rows must be in [1; 35]");
-	ensure!(args.cols > 0 && args.cols < 36, "cols must be in [1; 35]");
+pub fn main(args: Cli) -> Result<(), super::errors::Error> {
+	if args.rows == 0 || args.rows >= 36 || args.cols == 0 || args.cols >= 36 {
+		return Err(super::errors::Error::InvalidSudokuDimensions);
+	}
 
 	let mut sw = crate::util::Stopwatch::new();
 
 	sw.start();
-	let mut reader = open_file(&args.path).chain_err(|| ErrorKind::Parse(args.path.display().to_string()))?;
+	let mut reader = open_file(&args.path).map_err(|err| super::errors::Error::Read {
+		source: err,
+		path: args.path.display().to_string(),
+	})?;
 	sw.stop();
 	if args.time {
 		println!("[T] Opening file: {}", sw);
 	}
 
 	sw.start();
-	let mut board = crate::parser::sudoku::parse(&mut reader, args.rows, args.cols)
-		.chain_err(|| ErrorKind::Parse(args.path.display().to_string()))?;
+	let mut board =
+		crate::parser::sudoku::parse(&mut reader, args.rows, args.cols).map_err(|err| super::errors::Error::Parse {
+			source: err,
+			path: args.path.display().to_string(),
+		})?;
 	sw.stop();
 	if args.time {
 		println!("[T] Parsing board: {}", sw);

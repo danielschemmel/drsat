@@ -1,6 +1,6 @@
 use super::{Literal, Variable, VariableId};
-use crate::util::IndexedVec;
 use crate::SolverResult;
+use crate::util::IndexedVec;
 
 pub fn precompute(variables: &mut IndexedVec<VariableId, Variable>, clauses: &mut Vec<Vec<Literal>>) -> SolverResult {
 	// sorting
@@ -68,7 +68,7 @@ pub fn precompute(variables: &mut IndexedVec<VariableId, Variable>, clauses: &mu
 							return SolverResult::Unsat;
 						}
 					} else {
-						var.set(!lit.negated(), 0, ::std::usize::MAX);
+						var.set(!lit.negated(), 0, usize::MAX);
 						w.push(lit.id());
 					}
 					clauses.swap_remove(ci);

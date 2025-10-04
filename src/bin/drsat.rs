@@ -1,5 +1,5 @@
-use libdrsat::driver::errors::*;
-use libdrsat::{driver, VERSION};
+use libdrsat::driver::errors::Error;
+use libdrsat::{VERSION, driver};
 
 #[derive(clap::Parser, Debug)]
 #[clap(name = "drsat", about, long_about = None, version = VERSION)]
@@ -17,7 +17,7 @@ enum Commands {
 	Sudoku(driver::sudoku::Cli),
 }
 
-fn run() -> Result<()> {
+fn run() -> Result<(), Error> {
 	let args = <Cli as clap::Parser>::parse();
 	match args.command {
 		Commands::Completion(args) => {

@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate error_chain;
-
 pub mod cnf;
 pub mod driver;
 pub mod gp;

@@ -1,6 +1,5 @@
 use std::io::BufRead;
 
-use super::errors::*;
 use crate::cnf::{Problem, ProblemBuilder};
 
 fn is_ws(byte: u8) -> bool {
@@ -8,7 +7,7 @@ fn is_ws(byte: u8) -> bool {
 	byte == b' ' || x < 5
 }
 
-fn skip_ws(reader: &mut impl BufRead) -> Result<()> {
+fn skip_ws(reader: &mut impl BufRead) -> Result<(), super::errors::Error> {
 	loop {
 		let (skip, len) = {
 			let buf = reader.fill_buf()?;
@@ -28,7 +27,7 @@ fn skip_ws(reader: &mut impl BufRead) -> Result<()> {
 	}
 }
 
-fn skip_past_eol(reader: &mut impl BufRead) -> Result<()> {
+fn skip_past_eol(reader: &mut impl BufRead) -> Result<(), super::errors::Error> {
 	loop {
 		let (skip, len) = {
 			let buf = reader.fill_buf()?;
@@ -46,7 +45,7 @@ fn skip_past_eol(reader: &mut impl BufRead) -> Result<()> {
 	}
 }
 
-fn skip_comments(reader: &mut impl BufRead) -> Result<()> {
+fn skip_comments(reader: &mut impl BufRead) -> Result<(), super::errors::Error> {
 	loop {
 		skip_ws(reader)?;
 		let peek = {
@@ -64,7 +63,7 @@ fn skip_comments(reader: &mut impl BufRead) -> Result<()> {
 	}
 }
 
-fn parse_usize(reader: &mut impl BufRead) -> Result<usize> {
+fn parse_usize(reader: &mut impl BufRead) -> Result<usize, super::errors::Error> {
 	let mut result: usize = 0;
 	let mut nothing = true;
 	let mut done = false;
@@ -73,7 +72,7 @@ fn parse_usize(reader: &mut impl BufRead) -> Result<usize> {
 			let buf = reader.fill_buf()?;
 			if buf.is_empty() {
 				if nothing {
-					bail!(ErrorKind::ExpectedInt);
+					return Err(super::errors::Error::ExpectedInt);
 				} else {
 					return Ok(result);
 				}
@@ -86,11 +85,11 @@ fn parse_usize(reader: &mut impl BufRead) -> Result<usize> {
 					nothing = false;
 					let next = result.wrapping_mul(10).wrapping_add(dig as usize);
 					if next < result {
-						bail!(ErrorKind::Overflow);
+						return Err(super::errors::Error::Overflow);
 					}
 					result = next;
 				} else if nothing {
-					bail!(ErrorKind::ExpectedInt);
+					return Err(super::errors::Error::ExpectedInt);
 				} else {
 					done = true;
 					break;
@@ -103,13 +102,13 @@ fn parse_usize(reader: &mut impl BufRead) -> Result<usize> {
 	Ok(result)
 }
 
-fn parse_header(reader: &mut impl BufRead) -> Result<(usize, usize)> {
+fn parse_header(reader: &mut impl BufRead) -> Result<(usize, usize), super::errors::Error> {
 	skip_ws(reader)?;
 	if !{
 		let buf = reader.fill_buf()?;
 		!buf.is_empty() && buf[0] == b'p'
 	} {
-		bail!(ErrorKind::ExpectedP);
+		return Err(super::errors::Error::ExpectedP);
 	}
 	reader.consume(1);
 	skip_ws(reader)?;
@@ -117,7 +116,7 @@ fn parse_header(reader: &mut impl BufRead) -> Result<(usize, usize)> {
 		let buf = reader.fill_buf()?;
 		buf.len() >= 3 && buf[0] == b'c' && buf[1] == b'n' && buf[2] == b'f'
 	} {
-		bail!(ErrorKind::ExpectedCNF);
+		return Err(super::errors::Error::ExpectedCNF);
 	}
 	reader.consume(3);
 	skip_ws(reader)?;
@@ -127,7 +126,7 @@ fn parse_header(reader: &mut impl BufRead) -> Result<(usize, usize)> {
 	Ok((variables, clauses))
 }
 
-fn parse_variable(reader: &mut impl BufRead) -> Result<(usize, bool)> {
+fn parse_variable(reader: &mut impl BufRead) -> Result<(usize, bool), super::errors::Error> {
 	skip_ws(reader)?;
 	let neg = {
 		let buf = reader.fill_buf()?;
@@ -141,7 +140,7 @@ fn parse_variable(reader: &mut impl BufRead) -> Result<(usize, bool)> {
 	Ok((name, neg))
 }
 
-fn parse_clause(reader: &mut impl BufRead, builder: &mut ProblemBuilder<usize>) -> Result<()> {
+fn parse_clause(reader: &mut impl BufRead, builder: &mut ProblemBuilder<usize>) -> Result<(), super::errors::Error> {
 	let mut clause = builder.new_clause();
 	loop {
 		let (name, neg) = parse_variable(reader)?;
@@ -155,16 +154,16 @@ fn parse_clause(reader: &mut impl BufRead, builder: &mut ProblemBuilder<usize>) 
 	} else {
 		// this does not really have to be an error
 		// an empty clause would usually be considered trivially UNSAT
-		Err(ErrorKind::EmptyClause.into())
+		Err(super::errors::Error::EmptyClause)
 	}
 }
 
-pub fn parse(reader: &mut impl BufRead) -> Result<Problem<usize>> {
+pub fn parse(reader: &mut impl BufRead) -> Result<Problem<usize>, super::errors::Error> {
 	skip_comments(reader)?;
 	let mut builder = ProblemBuilder::new();
 	let (variables, clauses) = parse_header(reader)?;
 	if clauses == 0 {
-		bail!(ErrorKind::EmptyQuery);
+		return Err(super::errors::Error::EmptyQuery);
 	}
 	builder.reserve_variables(variables);
 	builder.reserve_clauses(clauses);
@@ -172,7 +171,10 @@ pub fn parse(reader: &mut impl BufRead) -> Result<Problem<usize>> {
 		parse_clause(reader, &mut builder)?;
 	}
 	if variables < builder.variable_count() {
-		bail!(ErrorKind::VariableCount(variables, builder.variable_count()));
+		return Err(super::errors::Error::VariableCount {
+			expected: variables,
+			actual: builder.variable_count(),
+		});
 	}
 	// anything else in the file, we explicitly ignore
 	// considering the many different ways dimacs files end, this

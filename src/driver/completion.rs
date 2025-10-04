@@ -1,14 +1,12 @@
 use clap_complete::Shell;
 
-use super::errors::*;
-
 #[derive(clap::Parser, Debug)]
 #[clap(about = "Generate completion scripts for various shells", long_about = None)]
 pub struct Cli {
 	shell: Shell,
 }
 
-pub fn run_command(args: Cli, mut command: clap::Command) -> Result<()> {
+pub fn run_command(args: Cli, mut command: clap::Command) -> Result<(), super::errors::Error> {
 	let bin_name = std::env::args_os()
 		.next()
 		.unwrap_or_else(|| panic!("The application was not passed its name"))

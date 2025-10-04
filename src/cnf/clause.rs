@@ -127,9 +127,9 @@ impl Clause {
 		debug_assert!(self.literals.len() >= 2);
 		debug_assert!(self.literals[0] < self.literals[1]); // literals must already be sorted by the precomputation step!
 		let mut a = 0;
-		let mut sa = ::std::usize::MAX;
+		let mut sa = usize::MAX;
 		let mut b = 0;
-		let mut sb = ::std::usize::MAX;
+		let mut sb = usize::MAX;
 		for i in 0..self.literals.len() {
 			let lit = self.literals[i];
 			let len = variables[lit.id()].get_clauses(lit.negated()).len();
@@ -230,12 +230,10 @@ impl Clause {
 			} else {
 				Apply::Unit(lit1)
 			}
+		} else if variables[lit1.id()].has_value() {
+			Apply::Unit(lit0)
 		} else {
-			if variables[lit1.id()].has_value() {
-				Apply::Unit(lit0)
-			} else {
-				Apply::Continue
-			}
+			Apply::Continue
 		}
 	}
 
@@ -274,7 +272,7 @@ impl Clause {
 		if variables[self.literals[pos].id()].get_depth() == 0 {
 			variables[self.literals[self.watched[0]].id()].unwatch(cid, self.literals[self.watched[0]].negated());
 			variables[self.literals[self.watched[1]].id()].unwatch(cid, self.literals[self.watched[1]].negated());
-		//self.glue = ::std::usize::MAX; // why does this actually *hurt*?!
+		//self.glue = usize::MAX; // why does this actually *hurt*?!
 		} else if pos != self.watched[0] {
 			if pos != self.watched[1] {
 				variables[self.literals[self.watched[0]].id()].unwatch(cid, self.literals[self.watched[0]].negated());

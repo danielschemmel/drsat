@@ -79,14 +79,14 @@ mod tests {
 	fn literal_test1() {
 		let lit = Literal::new(42, true);
 		assert_eq!(lit.id(), 42);
-		assert_eq!(lit.negated(), true);
+		assert!(lit.negated());
 	}
 
 	#[test]
 	fn literal_test2() {
 		let lit = Literal::new(13, false);
 		assert_eq!(lit.id(), 13);
-		assert_eq!(lit.negated(), false);
+		assert!(!lit.negated());
 	}
 
 	#[test]

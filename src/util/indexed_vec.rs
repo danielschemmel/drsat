@@ -23,7 +23,7 @@ impl USizeCast for u32 {
 	}
 
 	fn from_usize(val: usize) -> Self {
-		debug_assert!(val < ::std::u32::MAX as usize);
+		debug_assert!(val < u32::MAX as usize);
 		val as Self
 	}
 }

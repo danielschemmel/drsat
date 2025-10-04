@@ -1,20 +1,33 @@
 use std::io;
 use std::io::Write;
 
-error_chain! {
-	links {
-		Io(crate::io::errors::Error, crate::io::errors::ErrorKind);
-	}
-	foreign_links {
-		RawIo(io::Error); // FIXME
-		ParseInt(::std::num::ParseIntError);
-	}
-	errors {
-		Parse(path: String) {
-			description("parsing error")
-			display("Error parsing {}", path)
-		}
-	}
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+	#[error(transparent)]
+	Io(#[from] crate::io::errors::Error),
+
+	#[error(transparent)]
+	RawIo(#[from] std::io::Error), // FIXME
+
+	#[error(transparent)]
+	ParseInt(#[from] std::num::ParseIntError),
+
+	#[error("Error reading {path}")]
+	Read {
+		#[source]
+		source: crate::io::errors::Error,
+		path: String,
+	},
+
+	#[error("Error parsing {path}")]
+	Parse {
+		#[source]
+		source: crate::parser::errors::Error,
+		path: String,
+	},
+
+	#[error("Invalid dimensions for Sudoko (maximum dimensions: 35x35)")]
+	InvalidSudokuDimensions,
 }
 
 impl Error {
@@ -23,13 +36,15 @@ impl Error {
 	// 10 is reserved as the SAT competition result "SATISFIABLE"
 	// 20 is reserved as the SAT competition result "UNSATISFIABLE"
 	pub fn code(&self) -> i32 {
-		match *self.kind() {
-			ErrorKind::Parse(_) => 2,
-			ErrorKind::ParseInt(_) => 2,
-			ErrorKind::Io(_) => 100,
-			ErrorKind::RawIo(_) => 100,
-			ErrorKind::Msg(_) => 126,
-			_ => 127,
+		match *self {
+			Error::Read { .. } => 2,
+			Error::Parse { .. } => 2,
+			Error::ParseInt(..) => 2,
+			Error::Io(..) => 100,
+			Error::RawIo(..) => 100,
+			Error::InvalidSudokuDimensions => 126,
+			// Error::Msg(_) => 126,
+			// _ => 127,
 		}
 	}
 
@@ -37,16 +52,12 @@ impl Error {
 		let stderr = io::stderr();
 		let mut handle = stderr.lock();
 
-		writeln!(handle, "error: {}", self).expect("Error writing to stderr");
+		writeln!(handle, "error: {:?}", self).expect("Error writing to stderr");
 
-		for err in self.iter().skip(1) {
-			writeln!(handle, "caused by: {}", err).expect("Error writing to stderr");
-		}
+		// if let Some(backtrace) = self.backtrace() {
+		// 	writeln!(handle, "backtrace: {:?}", backtrace).expect("Error writing to stderr");
+		// }
 
-		if let Some(backtrace) = self.backtrace() {
-			writeln!(handle, "backtrace: {:?}", backtrace).expect("Error writing to stderr");
-		}
-
-		::std::process::exit(self.code());
+		std::process::exit(self.code());
 	}
 }

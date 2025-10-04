@@ -1,7 +1,7 @@
 use std::env;
 use std::process::exit;
 
-use libdrsat::{driver, SolverResult};
+use libdrsat::{SolverResult, driver};
 
 fn usage(name: &str) {
 	println!("usage: {} <PATH>", name);
