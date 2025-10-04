@@ -92,8 +92,8 @@ impl Variable {
 
 	pub fn unwatch(&mut self, cid: usize, negated: bool) {
 		let clauses = self.get_clauses(negated);
-		let pos = clauses.iter().position(|&x| x == cid).unwrap();
-		clauses.swap_remove(pos);
+		let pos = clauses.iter().rev().position(|&x| x == cid).unwrap();
+		clauses.swap_remove(clauses.len() - 1 - pos);
 	}
 
 	pub fn clear_watched(&mut self) {
