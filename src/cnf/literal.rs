@@ -1,9 +1,8 @@
-use std::cmp::Ordering;
 use std::{fmt, io};
 
 use super::VariableId;
 
-#[derive(Debug, Copy, Clone, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Literal {
 	data: VariableId,
 }
@@ -41,26 +40,6 @@ impl Literal {
 	}
 }
 
-impl Ord for Literal {
-	fn cmp(&self, other: &Literal) -> Ordering {
-		self.data.cmp(&other.data)
-	}
-}
-
-impl PartialOrd for Literal {
-	#[inline]
-	fn partial_cmp(&self, other: &Literal) -> Option<Ordering> {
-		Some(self.cmp(other))
-	}
-}
-
-impl PartialEq for Literal {
-	#[inline]
-	fn eq(&self, other: &Literal) -> bool {
-		self.data == other.data
-	}
-}
-
 impl fmt::Display for Literal {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		if self.negated() {
@@ -73,6 +52,8 @@ impl fmt::Display for Literal {
 
 #[cfg(test)]
 mod tests {
+	use std::cmp::Ordering;
+
 	use super::*;
 
 	#[test]

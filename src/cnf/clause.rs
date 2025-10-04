@@ -10,6 +10,7 @@ pub struct Clause {
 	glue: VariableId,
 }
 
+#[derive(Debug)]
 pub enum Apply {
 	Continue,
 	Unsat,
