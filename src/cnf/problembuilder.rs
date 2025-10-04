@@ -22,7 +22,7 @@ where
 		}
 	}
 
-	pub fn new_clause(&mut self) -> ClauseBuilder<T> {
+	pub fn new_clause(&mut self) -> ClauseBuilder<'_, T> {
 		self.clauses.push(Vec::new());
 		let clauses_len = self.clauses.len() - 1;
 		ClauseBuilder {

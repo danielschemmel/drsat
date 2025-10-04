@@ -71,7 +71,7 @@ impl Clause {
 		)
 	}
 
-	pub fn iter(&self) -> ::std::slice::Iter<Literal> {
+	pub fn iter(&self) -> ::std::slice::Iter<'_, Literal> {
 		self.literals.iter()
 	}
 
