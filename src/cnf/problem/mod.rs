@@ -1,23 +1,28 @@
 use std::fmt;
 
-use super::{Clause, Literal, VARIABLE_ID_MAX, Variable, VariableId};
+use super::{Clause, Literal, Variable, VariableId};
 use crate::SolverResult;
-use crate::util::{Histo, IndexedVec};
+use crate::util::Histo;
+
+mod initialization;
+mod precompute;
+mod print;
+mod solve;
 
 #[derive(Debug)]
 pub struct Problem<T: fmt::Display> {
 	alpha: f64,
 	gc_count: u64,
-	variables: IndexedVec<VariableId, Variable>,
-	variable_names: IndexedVec<VariableId, T>,
+	variables: Vec<Variable>,
+	variable_names: Vec<T>,
 	clauses: Vec<Clause>,
-	applications: IndexedVec<VariableId, VariableId>,
+	applications: Vec<VariableId>,
 	irreducible: usize,
 	num_conflicts: u64,
-	last_conflict: IndexedVec<VariableId, u64>,
-	plays: IndexedVec<VariableId, VariableId>,
+	last_conflict: Vec<u64>,
+	plays: Vec<VariableId>,
 	depth: VariableId,
-	active_variables: VariableId,
+	active_variables: usize,
 	conflict_lens: Histo,
 	solution: SolverResult,
 }
@@ -32,8 +37,3 @@ impl<T: fmt::Display> Problem<T> {
 		result
 	}
 }
-
-mod initialization;
-mod precompute;
-mod print;
-mod solve;

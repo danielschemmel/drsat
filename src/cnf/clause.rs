@@ -1,11 +1,10 @@
 use std::io;
 
 use super::{Literal, Variable, VariableId};
-use crate::util::IndexedVec;
 
 #[derive(Debug)]
 pub struct Clause {
-	literals: IndexedVec<VariableId, Literal>,
+	literals: Vec<Literal>,
 	watched: [VariableId; 2],
 	glue: VariableId,
 }
@@ -18,37 +17,36 @@ pub enum Apply {
 }
 
 impl Clause {
-	pub fn new(literals: IndexedVec<VariableId, Literal>, glue: VariableId) -> Clause {
+	pub fn new(literals: Vec<Literal>, glue: VariableId) -> Clause {
 		Clause {
 			literals,
-			watched: [0, 1],
+			watched: [VariableId::from_usize(0), VariableId::from_usize(1)],
 			glue,
 		}
 	}
 
 	pub fn from_learned(
-		mut literals: IndexedVec<VariableId, Literal>,
-		variables: &IndexedVec<VariableId, Variable>,
+		mut literals: Vec<Literal>,
+		variables: &Vec<Variable>,
 		max_depth: VariableId,
 	) -> (VariableId, Literal, Clause) {
 		literals.sort();
-		let mut marks = IndexedVec::<VariableId, bool>::new();
-		marks.resize(max_depth + 1, false);
-		let mut glue = 0;
-		let mut da = 0;
-		let mut pa = 0;
-		let mut db = 0;
-		let mut pb = 0;
-		debug_assert!(literals.iter().all(|lit| variables[lit.id()].has_value()));
+		let mut marks = vec![false; max_depth.to_usize() + 1];
+		let mut glue = VariableId::from_usize(0);
+		let mut da = VariableId::from_usize(0);
+		let mut pa = VariableId::from_usize(0);
+		let mut db = VariableId::from_usize(0);
+		let mut pb = VariableId::from_usize(0);
+		debug_assert!(literals.iter().all(|lit| variables[lit.id().to_usize()].has_value()));
 		for (i, depth) in literals
 			.iter()
-			.map(|lit| variables[lit.id()].get_depth())
+			.map(|lit| variables[lit.id().to_usize()].get_depth())
 			.enumerate()
-			.map(|(i, depth)| (i as VariableId, depth))
+			.map(|(i, depth)| (VariableId::from_usize(i), depth))
 		{
-			if !marks[depth] {
-				glue += 1;
-				marks[depth] = true;
+			if !marks[depth.to_usize()] {
+				glue = VariableId::from_usize(glue.to_usize() + 1);
+				marks[depth.to_usize()] = true;
 			}
 			if depth > da {
 				db = da;
@@ -60,7 +58,7 @@ impl Clause {
 				pb = i;
 			}
 		}
-		let lit = literals[pa];
+		let lit = literals[pa.to_usize()];
 		(
 			db,
 			lit,
@@ -76,31 +74,30 @@ impl Clause {
 		self.literals.iter()
 	}
 
-	pub fn print<T: ::std::fmt::Display>(
-		&self,
-		f: &mut impl io::Write,
-		variable_names: &IndexedVec<VariableId, T>,
-	) -> io::Result<()> {
+	pub fn print<T: ::std::fmt::Display>(&self, f: &mut impl io::Write, variable_names: &Vec<T>) -> io::Result<()> {
 		for (i, literal) in self.literals.iter().enumerate() {
 			if i != 0 {
 				write!(f, " ")?;
 			}
-			literal.print(f, &variable_names[literal.id()])?;
+			literal.print(f, &variable_names[literal.id().to_usize()])?;
 		}
 		Ok(())
 	}
 
-	pub fn update_glue(&mut self, variables: &IndexedVec<VariableId, Variable>, max_depth: VariableId) {
-		if self.glue <= 2 {
+	pub fn update_glue(&mut self, variables: &Vec<Variable>, max_depth: VariableId) {
+		if self.glue.to_usize() <= 2 {
 			return;
 		}
-		let mut marks = IndexedVec::<VariableId, bool>::new();
-		marks.resize(max_depth + 1, false);
-		let mut glue = 0;
-		for depth in self.literals.iter().map(|lit| variables[lit.id()].get_depth()) {
-			if !marks[depth] {
-				glue += 1;
-				marks[depth] = true;
+		let mut marks = vec![false; max_depth.to_usize() + 1];
+		let mut glue = VariableId::from_usize(0);
+		for depth in self
+			.literals
+			.iter()
+			.map(|lit| variables[lit.id().to_usize()].get_depth())
+		{
+			if !marks[depth.to_usize()] {
+				glue = VariableId::from_usize(glue.to_usize() + 1);
+				marks[depth.to_usize()] = true;
 				if glue >= self.glue {
 					return;
 				}
@@ -114,7 +111,7 @@ impl Clause {
 		self.glue
 	}
 
-	pub fn len(&self) -> VariableId {
+	pub fn len(&self) -> usize {
 		self.literals.len()
 	}
 
@@ -124,7 +121,7 @@ impl Clause {
 
 	/// The idea of this function is to distribute the (initial) watch list effort
 	/// fairly over all variables
-	pub fn initialize_watched(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>) {
+	pub fn initialize_watched(&mut self, cid: usize, variables: &mut Vec<Variable>) {
 		debug_assert!(self.literals.len() >= 2);
 		debug_assert!(self.literals[0] < self.literals[1]); // literals must already be sorted by the precomputation step!
 		let mut a = 0;
@@ -133,7 +130,7 @@ impl Clause {
 		let mut sb = usize::MAX;
 		for i in 0..self.literals.len() {
 			let lit = self.literals[i];
-			let len = variables[lit.id()].get_clauses(lit.negated()).len();
+			let len = variables[lit.id().to_usize()].get_clauses(lit.negated()).len();
 			if len < sa {
 				b = a;
 				sb = sa;
@@ -144,40 +141,40 @@ impl Clause {
 				sb = len;
 			}
 		}
-		self.watched[0] = a;
-		self.watched[1] = b;
+		self.watched[0] = VariableId::from_usize(a);
+		self.watched[1] = VariableId::from_usize(b);
 		debug_assert!(a != b);
 		self.notify_watched(cid, variables);
 	}
 
-	pub fn notify_watched(&self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>) {
-		let lit0 = self.literals[self.watched[0]];
-		if !variables[lit0.id()].has_value() || variables[lit0.id()].get_depth() != 0 {
-			variables[lit0.id()].watch(cid, lit0.negated());
-			let lit1 = self.literals[self.watched[1]];
-			variables[lit1.id()].watch(cid, lit1.negated());
+	pub fn notify_watched(&self, cid: usize, variables: &mut Vec<Variable>) {
+		let lit0 = self.literals[self.watched[0].to_usize()];
+		if !variables[lit0.id().to_usize()].has_value() || variables[lit0.id().to_usize()].get_depth().to_usize() != 0 {
+			variables[lit0.id().to_usize()].watch(cid, lit0.negated());
+			let lit1 = self.literals[self.watched[1].to_usize()];
+			variables[lit1.id().to_usize()].watch(cid, lit1.negated());
 		}
 	}
 
 	pub fn is_watched(&self, id: VariableId) -> bool {
-		self.literals[self.watched[0]].id() == id || self.literals[self.watched[1]].id() == id
+		self.literals[self.watched[0].to_usize()].id() == id || self.literals[self.watched[1].to_usize()].id() == id
 	}
 
-	pub fn apply(&mut self, cid: usize, variables: &mut IndexedVec<VariableId, Variable>) -> Apply {
-		let mut lit0 = self.literals[self.watched[0]];
-		if let Some(val) = variables[lit0.id()].value() {
+	pub fn apply(&mut self, cid: usize, variables: &mut Vec<Variable>) -> Apply {
+		let mut lit0 = self.literals[self.watched[0].to_usize()];
+		if let Some(val) = variables[lit0.id().to_usize()].value() {
 			if lit0.negated() != val {
 				return Apply::Continue;
 			}
 		}
-		let lit1 = self.literals[self.watched[1]];
-		if let Some(val) = variables[lit1.id()].value() {
+		let lit1 = self.literals[self.watched[1].to_usize()];
+		if let Some(val) = variables[lit1.id().to_usize()].value() {
 			if lit1.negated() != val {
 				return Apply::Continue;
 			}
 		}
 
-		let start = self.watched[0];
+		let start = self.watched[0].to_usize();
 		let mut i = start;
 		loop {
 			if i + 1 == self.literals.len() {
@@ -185,7 +182,7 @@ impl Clause {
 			} else {
 				i += 1;
 			}
-			if i == self.watched[1] {
+			if i == self.watched[1].to_usize() {
 				if i + 1 == self.literals.len() {
 					i = 0;
 				} else {
@@ -195,25 +192,25 @@ impl Clause {
 			if i == start {
 				break;
 			}
-			debug_assert!(i != self.watched[0]);
-			debug_assert!(i != self.watched[1]);
+			debug_assert!(i != self.watched[0].to_usize());
+			debug_assert!(i != self.watched[1].to_usize());
 			debug_assert!(i != start);
 			let lit = self.literals[i];
-			match variables[lit.id()].value() {
+			match variables[lit.id().to_usize()].value() {
 				None => {
-					if variables[lit0.id()].has_value() {
-						variables[lit0.id()].unwatch(cid, lit0.negated());
-						variables[lit.id()].watch(cid, lit.negated());
-						self.watched[0] = i;
-						if !variables[lit1.id()].has_value() {
+					if variables[lit0.id().to_usize()].has_value() {
+						variables[lit0.id().to_usize()].unwatch(cid, lit0.negated());
+						variables[lit.id().to_usize()].watch(cid, lit.negated());
+						self.watched[0] = VariableId::from_usize(i);
+						if !variables[lit1.id().to_usize()].has_value() {
 							return Apply::Continue;
 						}
 						lit0 = lit
 					} else {
-						debug_assert!(variables[lit1.id()].has_value());
-						variables[lit1.id()].unwatch(cid, lit1.negated());
-						variables[lit.id()].watch(cid, lit.negated());
-						self.watched[1] = i;
+						debug_assert!(variables[lit1.id().to_usize()].has_value());
+						variables[lit1.id().to_usize()].unwatch(cid, lit1.negated());
+						variables[lit.id().to_usize()].watch(cid, lit.negated());
+						self.watched[1] = VariableId::from_usize(i);
 						return Apply::Continue;
 					}
 				}
@@ -225,13 +222,13 @@ impl Clause {
 				}
 			}
 		}
-		if variables[lit0.id()].has_value() {
-			if variables[lit1.id()].has_value() {
+		if variables[lit0.id().to_usize()].has_value() {
+			if variables[lit1.id().to_usize()].has_value() {
 				Apply::Unsat
 			} else {
 				Apply::Unit(lit1)
 			}
-		} else if variables[lit1.id()].has_value() {
+		} else if variables[lit1.id().to_usize()].has_value() {
 			Apply::Unit(lit0)
 		} else {
 			Apply::Continue
@@ -241,12 +238,12 @@ impl Clause {
 	fn percolate_sat(
 		&mut self,
 		cid: usize,
-		variables: &mut IndexedVec<VariableId, Variable>,
-		start: VariableId,
-		mut pos: VariableId,
+		variables: &mut Vec<Variable>,
+		start: usize,
+		mut pos: usize,
 		lit: Literal,
 	) {
-		let mut mind = variables[lit.id()].get_depth();
+		let mut mind = variables[lit.id().to_usize()].get_depth();
 		let mut i = pos;
 		loop {
 			if i + 1 == self.literals.len() {
@@ -254,7 +251,7 @@ impl Clause {
 			} else {
 				i += 1;
 			}
-			if i == self.watched[1] {
+			if i == self.watched[1].to_usize() {
 				if i + 1 == self.literals.len() {
 					i = 0;
 				} else {
@@ -264,21 +261,21 @@ impl Clause {
 			if i == start {
 				break;
 			}
-			let d = variables[self.literals[i].id()].get_depth();
-			if d < mind && (d != 0 || variables[self.literals[i].id()].get_value() != self.literals[i].negated()) {
+			let d = variables[self.literals[i].id().to_usize()].get_depth();
+			if d < mind && (d.to_usize() != 0 || variables[self.literals[i].id().to_usize()].get_value() != self.literals[i].negated()) {
 				mind = d;
 				pos = i;
 			}
 		}
-		if variables[self.literals[pos].id()].get_depth() == 0 {
-			variables[self.literals[self.watched[0]].id()].unwatch(cid, self.literals[self.watched[0]].negated());
-			variables[self.literals[self.watched[1]].id()].unwatch(cid, self.literals[self.watched[1]].negated());
+		if variables[self.literals[pos].id().to_usize()].get_depth().to_usize() == 0 {
+			variables[self.literals[self.watched[0].to_usize()].id().to_usize()].unwatch(cid, self.literals[self.watched[0].to_usize()].negated());
+			variables[self.literals[self.watched[1].to_usize()].id().to_usize()].unwatch(cid, self.literals[self.watched[1].to_usize()].negated());
 		//self.glue = usize::MAX; // why does this actually *hurt*?!
-		} else if pos != self.watched[0] {
-			if pos != self.watched[1] {
-				variables[self.literals[self.watched[0]].id()].unwatch(cid, self.literals[self.watched[0]].negated());
-				variables[self.literals[pos].id()].watch(cid, self.literals[pos].negated());
-				self.watched[0] = pos;
+		} else if pos != self.watched[0].to_usize() {
+			if pos != self.watched[1].to_usize() {
+				variables[self.literals[self.watched[0].to_usize()].id().to_usize()].unwatch(cid, self.literals[self.watched[0].to_usize()].negated());
+				variables[self.literals[pos].id().to_usize()].watch(cid, self.literals[pos].negated());
+				self.watched[0] = VariableId::from_usize(pos);
 			} else {
 				self.watched.swap(0, 1);
 			}

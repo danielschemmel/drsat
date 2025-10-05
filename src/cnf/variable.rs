@@ -5,17 +5,72 @@
 // Too bad, I am not convinced.
 #[cfg(feature = "small_variable_ids")]
 mod variable_id_impl {
-	pub type VariableId = u32;
-	pub const VARIABLE_ID_MAX: VariableId = u32::MAX;
+	static_assertions::const_assert!(u32::BITS <= usize::BITS);
+
+	#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+	#[display("{_0}")]
+	pub struct VariableId(u32);
+
+	impl VariableId {
+		pub const MAX: VariableId = VariableId(u32::MAX);
+
+		#[inline]
+		pub const fn from_usize(id: usize) -> VariableId {
+			if id as u32 as usize != id {
+				panic!("`id` too large for being configured with 32-bit IDs");
+			}
+			Self(id as u32)
+		}
+
+		#[inline]
+		pub const fn to_usize(&self) -> usize {
+			self.0 as usize
+		}
+
+		#[inline]
+		pub const fn from_raw(id: u32) -> VariableId {
+			Self(id)
+		}
+
+		#[inline]
+		pub const fn as_raw(&self) -> u32 {
+			self.0
+		}
+	}
 }
 
 #[cfg(not(feature = "small_variable_ids"))]
 mod variable_id_impl {
-	pub type VariableId = usize;
-	pub const VARIABLE_ID_MAX: VariableId = usize::MAX;
+	#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+	#[display("{_0}")]
+	pub struct VariableId(usize);
+
+	impl VariableId {
+		pub const MAX: VariableId = VariableId(usize::MAX);
+
+		#[inline]
+		pub const fn from_usize(id: usize) -> VariableId {
+			Self(id)
+		}
+
+		#[inline]
+		pub const fn to_usize(&self) -> usize {
+			self.0
+		}
+
+		#[inline]
+		pub const fn from_raw(id: usize) -> VariableId {
+			Self(id)
+		}
+
+		#[inline]
+		pub const fn as_raw(&self) -> usize {
+			self.0
+		}
+	}
 }
 
-pub use self::variable_id_impl::{VARIABLE_ID_MAX, VariableId};
+pub use self::variable_id_impl::VariableId;
 
 #[derive(Debug)]
 pub struct Variable {
@@ -31,14 +86,14 @@ impl Variable {
 		Variable {
 			watchlists: [Vec::new(), Vec::new()],
 			ante: usize::MAX,
-			depth: VARIABLE_ID_MAX,
+			depth: VariableId::MAX,
 			value: false,
 			q: 0.0,
 		}
 	}
 
 	pub fn has_value(&self) -> bool {
-		self.depth != VARIABLE_ID_MAX
+		self.depth != VariableId::MAX
 	}
 
 	pub fn get_value(&self) -> bool {
@@ -51,7 +106,7 @@ impl Variable {
 	}
 
 	pub fn value(&self) -> Option<bool> {
-		if self.depth == VARIABLE_ID_MAX {
+		if self.depth == VariableId::MAX {
 			None
 		} else {
 			Some(self.value)
@@ -65,7 +120,7 @@ impl Variable {
 	}
 
 	pub fn unset(&mut self) {
-		self.depth = VARIABLE_ID_MAX;
+		self.depth = VariableId::MAX;
 	}
 
 	pub fn enable(&mut self, depth: VariableId) {

@@ -28,7 +28,7 @@ impl<T: fmt::Display> Problem<T> {
 					writer,
 					"{}{} ",
 					if lit.negated() { "-" } else { " " },
-					self.variable_names[lit.id()]
+					self.variable_names[lit.id().to_usize()]
 				)?;
 			}
 			writeln!(writer)?;
@@ -52,7 +52,7 @@ impl<T: fmt::Display> Problem<T> {
 				if lit.negated() {
 					write!(writer, "-")?;
 				}
-				write!(writer, "{} ", lit.id() + 1)?;
+				write!(writer, "{} ", lit.id().to_usize() + 1)?;
 			}
 			writeln!(writer, "0")?;
 		}

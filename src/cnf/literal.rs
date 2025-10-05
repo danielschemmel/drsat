@@ -2,33 +2,68 @@ use std::{fmt, io};
 
 use super::VariableId;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Literal {
-	data: VariableId,
+#[cfg(feature = "small_variable_ids")]
+mod literal_impl {
+	use super::*;
+
+	static_assertions::const_assert!(u32::BITS <= usize::BITS);
+
+	#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+	pub struct Literal(u32);
+
+	impl Literal {
+		#[inline]
+		pub fn new(id: VariableId, negated: bool) -> Literal {
+			let id = id.as_raw();
+			debug_assert!(id.wrapping_shl(1) >> 1 == id);
+			Self((id << 1) | (negated as u32))
+		}
+
+		#[inline]
+		pub fn id(&self) -> VariableId {
+			VariableId::from_raw(self.0 >> 1)
+		}
+
+		#[inline]
+		pub fn negated(&self) -> bool {
+			(self.0 & 1) != 0
+		}
+	}
 }
+
+#[cfg(not(feature = "small_variable_ids"))]
+mod literal_impl {
+	use super::*;
+
+	#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+	pub struct Literal(usize);
+
+	impl Literal {
+		#[inline]
+		pub fn new(id: VariableId, negated: bool) -> Literal {
+			let id = id.as_raw();
+			debug_assert!(id.wrapping_shl(1) >> 1 == id);
+			Self((id << 1) | (negated as usize))
+		}
+
+		#[inline]
+		pub fn id(&self) -> VariableId {
+			VariableId::from_raw(self.0 >> 1)
+		}
+
+		#[inline]
+		pub fn negated(&self) -> bool {
+			(self.0 & 1) != 0
+		}
+	}
+}
+
+pub use literal_impl::Literal;
 
 impl Literal {
 	#[inline]
-	pub fn new(id: VariableId, negated: bool) -> Literal {
-		debug_assert!(id.wrapping_shl(1) >> 1 == id);
-		Literal {
-			data: (id << 1) | (negated as VariableId),
-		}
-	}
-
-	#[inline]
-	pub fn id(&self) -> VariableId {
-		self.data >> 1
-	}
-
-	#[inline]
-	pub fn negated(&self) -> bool {
-		(self.data & 1) != 0
-	}
-
-	#[inline]
 	pub fn disassemble(&self) -> (VariableId, bool) {
-		(self.data >> 1, (self.data & 1) != 0)
+		(self.id(), self.negated())
 	}
 
 	pub fn print<T: ::std::fmt::Display>(&self, f: &mut impl io::Write, name: &T) -> io::Result<()> {
@@ -58,22 +93,22 @@ mod tests {
 
 	#[test]
 	fn literal_test1() {
-		let lit = Literal::new(42, true);
-		assert_eq!(lit.id(), 42);
+		let lit = Literal::new(VariableId::from_usize(42), true);
+		assert_eq!(lit.id(), VariableId::from_usize(42));
 		assert!(lit.negated());
 	}
 
 	#[test]
 	fn literal_test2() {
-		let lit = Literal::new(13, false);
-		assert_eq!(lit.id(), 13);
+		let lit = Literal::new(VariableId::from_usize(13), false);
+		assert_eq!(lit.id().to_usize(), 13);
 		assert!(!lit.negated());
 	}
 
 	#[test]
 	fn literal_order1() {
-		let a = Literal::new(10, false);
-		let b = Literal::new(12, false);
+		let a = Literal::new(VariableId::from_usize(10), false);
+		let b = Literal::new(VariableId::from_usize(12), false);
 		assert!(a < b);
 		assert!(a <= b);
 		assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
@@ -86,8 +121,8 @@ mod tests {
 
 	#[test]
 	fn literal_order2() {
-		let a = Literal::new(400, false);
-		let b = Literal::new(400, true);
+		let a = Literal::new(VariableId::from_usize(400), false);
+		let b = Literal::new(VariableId::from_usize(400), true);
 		assert!(a < b);
 		assert!(a <= b);
 		assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));

@@ -47,7 +47,7 @@ where
 	fn variable_id(&mut self, name: T) -> VariableId {
 		match self.names2index.entry(name) {
 			Entry::Vacant(vacant_entry) => {
-				let id = self.names.len() as VariableId;
+				let id = VariableId::from_usize(self.names.len());
 				self.names.push(vacant_entry.key().clone());
 				vacant_entry.insert(id);
 				id
