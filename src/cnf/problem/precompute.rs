@@ -1,7 +1,7 @@
-use super::{Literal, Variable, VariableId};
 use crate::SolverResult;
+use crate::cnf::{ClauseLiteralVec, Variable, VariableId};
 
-pub fn precompute(variables: &mut Vec<Variable>, clauses: &mut Vec<Vec<Literal>>) -> SolverResult {
+pub fn precompute(variables: &mut Vec<Variable>, clauses: &mut Vec<ClauseLiteralVec>) -> SolverResult {
 	// sorting
 	for clause in clauses.iter_mut() {
 		clause.sort();

@@ -1,8 +1,8 @@
 use std::fmt;
 
-use super::{Clause, Literal, Problem, VariableId};
 use crate::SolverResult;
 use crate::cnf::clause::Apply;
+use crate::cnf::{Clause, ClauseLiteralVec, Literal, Problem, VariableId};
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn solve(&mut self) -> SolverResult {
@@ -42,7 +42,7 @@ impl<T: fmt::Display> Problem<T> {
 		}
 	}
 
-	fn learn(&mut self, mut cid: usize) -> Vec<Literal> {
+	fn learn(&mut self, mut cid: usize) -> ClauseLiteralVec {
 		debug_assert!(self.depth.to_usize() > 0);
 		for lit in self.clauses[cid].iter() {
 			self.last_conflict[lit.id().to_usize()] = self.num_conflicts;
@@ -57,7 +57,7 @@ impl<T: fmt::Display> Problem<T> {
 				== self.depth
 		);
 		let mut marks = vec![false; self.variables.len()];
-		let mut lits = Vec::<Literal>::new();
+		let mut lits = ClauseLiteralVec::new();
 		let mut queue = Vec::<usize>::with_capacity(self.clauses[cid].len());
 		let mut implicated = VariableId::MAX;
 		loop {
@@ -97,7 +97,7 @@ impl<T: fmt::Display> Problem<T> {
 		lits
 	}
 
-	fn propagate_learned(&mut self, lits: Vec<Literal>) -> Option<usize> {
+	fn propagate_learned(&mut self, lits: ClauseLiteralVec) -> Option<usize> {
 		if lits.len() == 1 {
 			let lit = lits[0];
 			debug_assert!(self.variables[lit.id().to_usize()].has_value());
@@ -132,7 +132,10 @@ impl<T: fmt::Display> Problem<T> {
 	}
 
 	fn subsumption_check(&self, vid: VariableId, marks: &mut Vec<bool>) -> bool {
-		for id in self.clauses[self.variables[vid.to_usize()].get_ante()].iter().map(|lit| lit.id()) {
+		for id in self.clauses[self.variables[vid.to_usize()].get_ante()]
+			.iter()
+			.map(|lit| lit.id())
+		{
 			if vid != id && !marks[id.to_usize()] && self.variables[id.to_usize()].get_depth().to_usize() != 0 {
 				if self.variables[id.to_usize()].get_ante() != usize::MAX && self.subsumption_check(id, marks) {
 					marks[id.to_usize()] = true;
@@ -144,7 +147,7 @@ impl<T: fmt::Display> Problem<T> {
 		true
 	}
 
-	pub fn minimize(&self, lits: &mut Vec<Literal>, mut marks: Vec<bool>) {
+	pub fn minimize(&self, lits: &mut ClauseLiteralVec, mut marks: Vec<bool>) {
 		let mut i = 0;
 		while i < lits.len() {
 			let var = &self.variables[lits[i].id().to_usize()];
@@ -158,6 +161,7 @@ impl<T: fmt::Display> Problem<T> {
 				i += 1;
 			}
 		}
+		lits.shrink_to_fit();
 	}
 
 	// backjump applications down to depth
@@ -198,14 +202,16 @@ impl<T: fmt::Display> Problem<T> {
 	}
 
 	fn choose(&mut self) {
-		let choice = VariableId::from_usize(self
-			.variables
-			.iter()
-			.enumerate()
-			.filter(|(_, var)| !var.has_value())
-			.max_by(|(_, a), (_, b)| a.q().partial_cmp(b.q()).unwrap())
-			.unwrap()
-			.0); // FIXME: get rid of the conversion
+		let choice = VariableId::from_usize(
+			self
+				.variables
+				.iter()
+				.enumerate()
+				.filter(|(_, var)| !var.has_value())
+				.max_by(|(_, a), (_, b)| a.q().partial_cmp(b.q()).unwrap())
+				.unwrap()
+				.0,
+		); // FIXME: get rid of the conversion
 		self.plays.push(choice);
 		self.depth = VariableId::from_usize(self.depth.to_usize() + 1);
 		self.variables[choice.to_usize()].enable(self.depth);

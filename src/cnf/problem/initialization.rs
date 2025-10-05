@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use super::{Clause, Literal, Problem, Variable, VariableId};
 use crate::SolverResult;
+use crate::cnf::{Clause, ClauseLiteralVec, Problem, Variable, VariableId};
 use crate::util::Histo;
 
 impl<T: fmt::Display> Problem<T> {
-	pub fn new(names: Vec<T>, mut clauses: Vec<Vec<Literal>>) -> Problem<T> {
+	pub fn new(names: Vec<T>, mut clauses: Vec<ClauseLiteralVec>) -> Problem<T> {
 		let varcount = names.len();
 		let mut variables = (0..varcount).map(|_| Variable::new()).collect();
 		let solution = super::precompute::precompute(&mut variables, &mut clauses);
@@ -18,7 +18,10 @@ impl<T: fmt::Display> Problem<T> {
 			gc_count: 0,
 			variables,
 			variable_names: names,
-			clauses: clauses.into_iter().map(|c| Clause::new(c, VariableId::from_usize(1))).collect(),
+			clauses: clauses
+				.into_iter()
+				.map(|c| Clause::new(c, VariableId::from_usize(1)))
+				.collect(),
 			applications: Vec::with_capacity(varcount),
 			irreducible,
 			num_conflicts: 0,

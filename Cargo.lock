@@ -388,6 +388,7 @@ dependencies = [
  "clap_complete",
  "derive_more",
  "flate2",
+ "smallvec",
  "static_assertions",
  "thiserror 2.0.17",
  "xz2",

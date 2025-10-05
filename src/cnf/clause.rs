@@ -1,13 +1,17 @@
 use std::io;
 
+use smallvec::SmallVec;
+
 use super::{Literal, Variable, VariableId};
 
 #[derive(Debug)]
 pub struct Clause {
-	literals: Vec<Literal>,
+	literals: ClauseLiteralVec,
 	watched: [VariableId; 2],
 	glue: VariableId,
 }
+
+pub type ClauseLiteralVec = SmallVec<[Literal; 4]>;
 
 #[derive(Debug)]
 pub enum Apply {
@@ -17,7 +21,9 @@ pub enum Apply {
 }
 
 impl Clause {
-	pub fn new(literals: Vec<Literal>, glue: VariableId) -> Clause {
+	pub fn new(literals: ClauseLiteralVec, glue: VariableId) -> Clause {
+		debug_assert!(literals.is_sorted());
+
 		Clause {
 			literals,
 			watched: [VariableId::from_usize(0), VariableId::from_usize(1)],
@@ -26,7 +32,7 @@ impl Clause {
 	}
 
 	pub fn from_learned(
-		mut literals: Vec<Literal>,
+		mut literals: ClauseLiteralVec,
 		variables: &Vec<Variable>,
 		max_depth: VariableId,
 	) -> (VariableId, Literal, Clause) {
@@ -235,14 +241,7 @@ impl Clause {
 		}
 	}
 
-	fn percolate_sat(
-		&mut self,
-		cid: usize,
-		variables: &mut Vec<Variable>,
-		start: usize,
-		mut pos: usize,
-		lit: Literal,
-	) {
+	fn percolate_sat(&mut self, cid: usize, variables: &mut Vec<Variable>, start: usize, mut pos: usize, lit: Literal) {
 		let mut mind = variables[lit.id().to_usize()].get_depth();
 		let mut i = pos;
 		loop {
@@ -262,18 +261,23 @@ impl Clause {
 				break;
 			}
 			let d = variables[self.literals[i].id().to_usize()].get_depth();
-			if d < mind && (d.to_usize() != 0 || variables[self.literals[i].id().to_usize()].get_value() != self.literals[i].negated()) {
+			if d < mind
+				&& (d.to_usize() != 0 || variables[self.literals[i].id().to_usize()].get_value() != self.literals[i].negated())
+			{
 				mind = d;
 				pos = i;
 			}
 		}
 		if variables[self.literals[pos].id().to_usize()].get_depth().to_usize() == 0 {
-			variables[self.literals[self.watched[0].to_usize()].id().to_usize()].unwatch(cid, self.literals[self.watched[0].to_usize()].negated());
-			variables[self.literals[self.watched[1].to_usize()].id().to_usize()].unwatch(cid, self.literals[self.watched[1].to_usize()].negated());
+			variables[self.literals[self.watched[0].to_usize()].id().to_usize()]
+				.unwatch(cid, self.literals[self.watched[0].to_usize()].negated());
+			variables[self.literals[self.watched[1].to_usize()].id().to_usize()]
+				.unwatch(cid, self.literals[self.watched[1].to_usize()].negated());
 		//self.glue = usize::MAX; // why does this actually *hurt*?!
 		} else if pos != self.watched[0].to_usize() {
 			if pos != self.watched[1].to_usize() {
-				variables[self.literals[self.watched[0].to_usize()].id().to_usize()].unwatch(cid, self.literals[self.watched[0].to_usize()].negated());
+				variables[self.literals[self.watched[0].to_usize()].id().to_usize()]
+					.unwatch(cid, self.literals[self.watched[0].to_usize()].negated());
 				variables[self.literals[pos].id().to_usize()].watch(cid, self.literals[pos].negated());
 				self.watched[0] = VariableId::from_usize(pos);
 			} else {

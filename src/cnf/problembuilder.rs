@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
-use super::{Literal, Problem, VariableId};
+use crate::cnf::{ClauseLiteralVec, Literal, Problem, VariableId};
 
 #[derive(Debug)]
 pub struct ProblemBuilder<T: ::std::hash::Hash + ::std::cmp::Eq> {
 	names2index: HashMap<T, VariableId>,
 	names: Vec<T>,
-	clauses: Vec<Vec<Literal>>,
+	clauses: Vec<ClauseLiteralVec>,
 }
 
 impl<T> ProblemBuilder<T>
@@ -23,7 +23,7 @@ where
 	}
 
 	pub fn new_clause(&mut self) -> ClauseBuilder<'_, T> {
-		self.clauses.push(Vec::new());
+		self.clauses.push(ClauseLiteralVec::new());
 		let clauses_len = self.clauses.len() - 1;
 		ClauseBuilder {
 			problembuilder: self,

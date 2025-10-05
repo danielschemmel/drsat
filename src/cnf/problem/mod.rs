@@ -1,7 +1,7 @@
 use std::fmt;
 
-use super::{Clause, Literal, Variable, VariableId};
 use crate::SolverResult;
+use crate::cnf::{Clause, Variable, VariableId};
 use crate::util::Histo;
 
 mod initialization;

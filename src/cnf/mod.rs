@@ -2,7 +2,7 @@ mod literal;
 pub use self::literal::Literal;
 
 pub mod clause;
-pub use self::clause::Clause;
+pub use self::clause::{Clause, ClauseLiteralVec};
 
 pub mod problem;
 pub use self::problem::Problem;
