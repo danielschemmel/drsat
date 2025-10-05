@@ -11,6 +11,10 @@ pub struct Clause {
 	glue: VariableId,
 }
 
+#[cfg(feature = "small_variable_ids")]
+pub type ClauseLiteralVec = SmallVec<[Literal; 6]>;
+
+#[cfg(not(feature = "small_variable_ids"))]
 pub type ClauseLiteralVec = SmallVec<[Literal; 4]>;
 
 #[derive(Debug)]
