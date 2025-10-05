@@ -22,10 +22,8 @@ Features of the core SAT solver:
 - Initialization of CHB scores based on an additional static heuristic
 - Basic preprocessing
 
-While drsat is written in a way that ensures that available memory and time are the only limits to which queries can be solved, it is possible to enable additional optimizations by enabling the `aggressive` feature, such as in `cargo build --release --features=aggressive`. This will for example reduce the number of supported variables to about 2 billion. While the optimizations enabled this way should not cause any troubly in the general case, they are not enabled by default to emphasize that they may technically cause problems.
-
-Unlike most state of the art SAT solvers such as minisat or lingeling (and their various derivatives), drsat is written in pure, safe Rust excepting only external libraries used e.g. when opening compressed files. When porting the original C++ version to Rust in January of 2017, unscientific, exploratory measurements gave a roughly 15% decrease in performance (note that both compilers as well as drsat itself have changed - and hopefully improved - since then). Most of that cost probably comes from runtime bounds checking.
+While drsat is written in a way that ensures that available memory and time are the only limits to which queries can be solved, it is possible to enable additional optimizations by enabling the `aggressive` feature, such as in `cargo build --release --features=aggressive`. This will for example reduce the number of supported variables to about 2 billion. While the optimizations enabled this way should not cause any trouble in the general case, they are not enabled by default to emphasize that they may technically cause problems.
 
 While drsat itself is an original program not derived from any other SAT solver, its algorithms are of course mostly not original inventions.
 
-(c) 2017 Daniel Schemmel, all rights reserved
+(c) 2017-2025 Daniel Schemmel, all rights reserved
