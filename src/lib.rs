@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 pub mod cnf;
 pub mod driver;
 pub mod gp;
@@ -12,5 +14,4 @@ pub const VERSION: &str = build_info::format!("{} {}", $.crate_info.version, $.v
 pub enum SolverResult {
 	Sat,
 	Unsat,
-	Unknown,
 }

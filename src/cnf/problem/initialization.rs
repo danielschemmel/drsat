@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::SolverResult;
 use crate::cnf::{Clause, ClauseLiteralVec, Problem, Variable, VariableId};
 use crate::util::Histo;
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn new(names: Vec<T>, mut clauses: Vec<ClauseLiteralVec>) -> Problem<T> {
 		let varcount = names.len();
-		let mut variables = (0..varcount).map(|_| Variable::new()).collect();
+		let mut variables = (0..varcount).map(|_| Variable::new()).collect::<Vec<_>>();
 		let solution = super::precompute::precompute(&mut variables, &mut clauses);
 		let irreducible = clauses.len();
 		let last_conflict = vec![0; varcount];
@@ -32,14 +31,14 @@ impl<T: fmt::Display> Problem<T> {
 			conflict_lens: Histo::new(),
 			solution,
 		};
-		if problem.solution == SolverResult::Unknown {
+		if problem.solution.is_none() {
 			problem.initialize();
 		}
 		problem
 	}
 
 	fn initialize(&mut self) {
-		let mut counters = Vec::<[HashMap<i32, usize>; 2]>::with_capacity(self.variables.len().try_into().unwrap());
+		let mut counters = Vec::<[HashMap<i32, usize>; 2]>::with_capacity(self.variables.len());
 		for _ in 0..self.variables.len() {
 			counters.push([HashMap::new(), HashMap::new()]);
 		}

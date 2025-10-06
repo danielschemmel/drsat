@@ -15,15 +15,15 @@ fn main() {
 	}
 
 	match driver::comp::main(&args[1]) {
-		Ok(SolverResult::Unknown) => {
+		Ok(None) => {
 			println!("s UNKNOWN");
 			exit(0);
 		}
-		Ok(SolverResult::Sat) => {
+		Ok(Some(SolverResult::Sat)) => {
 			println!("s SATISFIABLE");
 			exit(10);
 		}
-		Ok(SolverResult::Unsat) => {
+		Ok(Some(SolverResult::Unsat)) => {
 			println!("s UNSATISFIABLE");
 			exit(20);
 		}

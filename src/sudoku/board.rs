@@ -229,11 +229,11 @@ impl Board {
 	pub fn solve(&self) -> Option<Vec<usize>> {
 		if let Some(mut problem) = self.create_problem() {
 			match problem.solve() {
-				SolverResult::Unsat => None,
-				SolverResult::Unknown => {
+				Some(SolverResult::Unsat) => None,
+				None => {
 					panic!("solver returned an unknown result");
 				}
-				SolverResult::Sat => {
+				Some(SolverResult::Sat) => {
 					let model = problem.model();
 					let mut solution = vec![0; self.count * self.count];
 					for t in model.iter().filter(|t| t.1) {

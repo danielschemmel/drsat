@@ -7,7 +7,7 @@ fn sat1() {
 	pb.new_clause().add_literal("x1", false);
 	let mut problem = pb.as_problem();
 	let result = problem.solve();
-	assert_eq!(result, SolverResult::Sat);
+	assert_eq!(result, Some(SolverResult::Sat));
 }
 
 #[test]
@@ -16,7 +16,7 @@ fn sat2() {
 	pb.new_clause().add_literal("x1", true);
 	let mut problem = pb.as_problem();
 	let result = problem.solve();
-	assert_eq!(result, SolverResult::Sat);
+	assert_eq!(result, Some(SolverResult::Sat));
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn sat3() {
 		.add_literal("x3", false);
 	let mut problem = pb.as_problem();
 	let result = problem.solve();
-	assert_eq!(result, SolverResult::Sat);
+	assert_eq!(result, Some(SolverResult::Sat));
 }
 
 #[test]
@@ -48,7 +48,23 @@ fn sat4() {
 		.add_literal("x3", true);
 	let mut problem = pb.as_problem();
 	let result = problem.solve();
-	assert_eq!(result, SolverResult::Sat);
+	assert_eq!(result, Some(SolverResult::Sat));
+}
+
+#[test]
+fn sat5() {
+	let mut pb = ProblemBuilder::new();
+	pb.new_clause()
+		.add_literal("x1", false)
+		.add_literal("x1", true)
+		.add_literal("x2", false);
+	pb.new_clause()
+		.add_literal("x1", true)
+		.add_literal("x1", false)
+		.add_literal("x2", true);
+	let mut problem = pb.as_problem();
+	let result = problem.solve();
+	assert_eq!(result, Some(SolverResult::Sat));
 }
 
 #[test]
@@ -58,7 +74,7 @@ fn unsat1() {
 	pb.new_clause().add_literal("x1", true);
 	let mut problem = pb.as_problem();
 	let result = problem.solve();
-	assert_eq!(result, SolverResult::Unsat);
+	assert_eq!(result, Some(SolverResult::Unsat));
 }
 
 #[test]
@@ -98,5 +114,5 @@ fn unsat2() {
 		.add_literal("x3", true);
 	let mut problem = pb.as_problem();
 	let result = problem.solve();
-	assert_eq!(result, SolverResult::Unsat);
+	assert_eq!(result, Some(SolverResult::Unsat));
 }

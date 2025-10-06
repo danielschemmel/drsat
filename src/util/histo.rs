@@ -1,6 +1,5 @@
-use std::fmt;
-
-#[derive(Debug)]
+#[derive(derive_more::Display, Debug)]
+#[display("{bins:?}")]
 pub struct Histo {
 	pub bins: Vec<u64>,
 }
@@ -21,11 +20,5 @@ impl Histo {
 impl Default for Histo {
 	fn default() -> Self {
 		Self::new()
-	}
-}
-
-impl fmt::Display for Histo {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "{:?}", self.bins)
 	}
 }
