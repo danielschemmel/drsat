@@ -24,12 +24,12 @@ pub struct Problem<T: fmt::Display> {
 	depth: VariableId,
 	active_variables: usize,
 	conflict_lens: Histo,
-	solution: SolverResult,
+	solution: Option<SolverResult>,
 }
 
 impl<T: fmt::Display> Problem<T> {
 	pub fn model(&self) -> Vec<(&T, bool)> {
-		let mut result = Vec::with_capacity(self.variables.len().try_into().unwrap());
+		let mut result = Vec::with_capacity(self.variables.len());
 		for (var, name) in self.variables.iter().zip(self.variable_names.iter()) {
 			debug_assert!(var.has_value());
 			result.push((name, var.get_value()));

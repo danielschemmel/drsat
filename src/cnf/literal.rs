@@ -132,4 +132,18 @@ mod tests {
 		assert_eq!(a.cmp(&a), Ordering::Equal);
 		assert_eq!(b.cmp(&a), Ordering::Greater);
 	}
+
+	#[test]
+	fn literal_order3() {
+		let a = Literal::new(VariableId::from_usize(17), true);
+		let b = Literal::new(VariableId::from_usize(18), false);
+		assert!(a < b);
+		assert!(a <= b);
+		assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+		assert_eq!(a.partial_cmp(&a), Some(Ordering::Equal));
+		assert_eq!(b.partial_cmp(&a), Some(Ordering::Greater));
+		assert_eq!(a.cmp(&b), Ordering::Less);
+		assert_eq!(a.cmp(&a), Ordering::Equal);
+		assert_eq!(b.cmp(&a), Ordering::Greater);
+	}
 }

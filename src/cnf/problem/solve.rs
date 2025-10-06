@@ -5,9 +5,9 @@ use crate::cnf::clause::Apply;
 use crate::cnf::{Clause, ClauseLiteralVec, Literal, Problem, VariableId};
 
 impl<T: fmt::Display> Problem<T> {
-	pub fn solve(&mut self) -> SolverResult {
-		if self.solution != SolverResult::Unknown {
-			return self.solution;
+	pub fn solve(&mut self) -> Option<SolverResult> {
+		if let Some(solution) = self.solution {
+			return Some(solution);
 		}
 		let mut gc_next: u32 = 2047; // a u32 is safe, as the runtime to cause an overflow is prohibitive
 		let mut gc_pos: u32 = 0;
@@ -16,7 +16,7 @@ impl<T: fmt::Display> Problem<T> {
 			self.update_q(&conflict);
 			if let Some(cid) = conflict {
 				if self.depth.to_usize() == 0 {
-					return SolverResult::Unsat;
+					return Some(SolverResult::Unsat);
 				}
 				if self.alpha > 0.06 {
 					self.alpha -= 1e-6;
@@ -27,7 +27,7 @@ impl<T: fmt::Display> Problem<T> {
 				conflict = self.propagate_learned(lits);
 			} else {
 				if self.active_variables == self.applications.len() {
-					return SolverResult::Sat;
+					return Some(SolverResult::Sat);
 				}
 				if gc_pos >= gc_next {
 					gc_next += 512;
@@ -117,9 +117,7 @@ impl<T: fmt::Display> Problem<T> {
 			self.clauses.push(clause);
 			debug_assert!(self.variables[lit.id().to_usize()].has_value());
 			self.backjump();
-			self
-				.conflict_lens
-				.add((self.clauses.last().unwrap().len() - 1).try_into().unwrap());
+			self.conflict_lens.add(self.clauses.last().unwrap().len() - 1);
 			self
 				.clauses
 				.last()

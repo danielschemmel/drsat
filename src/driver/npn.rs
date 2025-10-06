@@ -43,13 +43,13 @@ pub fn main(args: Cli) -> Result<(), super::errors::Error> {
 		problem.print_conflict_histo(&mut ::std::io::stdout())?;
 	}
 	match result {
-		SolverResult::Sat => {
+		Some(SolverResult::Sat) => {
 			println!("Result: Satisfiable");
 			println!("Model:");
 			problem.print_model(&mut ::std::io::stdout(), "  ")?;
 		}
-		SolverResult::Unsat => println!("Result: Unsatisfiable"),
-		SolverResult::Unknown => println!("Result: Unknown"),
+		Some(SolverResult::Unsat) => println!("Result: Unsatisfiable"),
+		None => println!("Result: Unknown"),
 	}
 
 	Ok(())

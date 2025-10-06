@@ -6,7 +6,7 @@ authors = ["Daniel Schemmel <daniel@schemmel.net>"]
 description = "SAT solver"
 
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.86"
 
 default-run = "drsat"
 
@@ -35,10 +35,10 @@ build-info-build = { version = "0.0.44" }
 [dependencies]
 build-info = { version = "0.0.44" }
 bzip2 = { version = "0.6.0" }
-clap = { version = "4.0.10", features = ["derive"] }
-clap_complete = { version = "4.0.2" }
+clap = { version = "4.5.48", features = ["derive"] }
+clap_complete = { version = "4.5.58" }
 derive_more = { version = "2.0.1" }
-flate2 = { version = "1.0.24" }
+flate2 = { version = "1.1.4" }
 smallvec = { version = "1.15.1", features = ["const_generics", "const_new", "union"] }
 static_assertions = { version = "1.1.0" }
 thiserror = { version = "2.0.17" }
