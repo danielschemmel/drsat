@@ -6,7 +6,7 @@ authors = ["Daniel Schemmel <daniel@schemmel.net>"]
 description = "SAT solver"
 
 edition = "2024"
-rust-version = "1.86"
+rust-version = "1.88"
 
 default-run = "drsat"
 
