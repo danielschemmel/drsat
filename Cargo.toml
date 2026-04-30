@@ -28,10 +28,10 @@ small_variable_ids = []
 aggressive = [ "small_variable_ids" ]
 
 [build-dependencies]
-build-info-build = { version = "0.0.41" }
+build-info-build = { version = "0.0.44" }
 
 [dependencies]
-build-info = { version = "0.0.41" }
+build-info = { version = "0.0.44" }
 bzip2 = { version = "0.6.0" }
 clap = { version = "4.0.10", features = ["derive"] }
 clap_complete = { version = "4.0.2" }
